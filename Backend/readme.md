@@ -80,3 +80,53 @@ Logs in an existing user.
   }
 }
 ```
+
+## GET /users/profile
+
+### Description
+
+Returns the authenticated user's profile.
+
+### Required Data
+
+None (authentication token is required in headers/cookies).
+
+### Response
+
+• 200 : User profile returned  
+• 401 : Unauthorized or missing token
+
+```json
+// Example response
+{
+  "user": {
+    "_id": "userId",
+    "firstname": "John",
+    "lastname": "Doe",
+    "email": "johndoe@example.com"
+  }
+}
+```
+
+## GET /users/logout
+
+### Description
+
+Logs out the authenticated user, invalidating the current token.
+
+### Required Data
+
+None (authentication token is required in headers/cookies).
+
+### Response
+
+• 200 : Logout successful  
+• 401 : Unauthorized if token is missing or invalid
+
+```json
+// Example response
+{
+  "message": "Logout successful"
+}
+```
+
