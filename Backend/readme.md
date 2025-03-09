@@ -130,3 +130,41 @@ None (authentication token is required in headers/cookies).
 }
 ```
 
+## POST /captain/register
+
+### Description
+
+Registers a new captain account.
+
+### Required Data
+
+• email : Must be a valid email address  
+• fullname.firstname : At least 3 characters  
+• password : At least 6 characters  
+• vehicle : color, plate, capacity, and valid vehicleType
+
+### Response
+
+• 201 : Captain successfully created  
+• 400 : Validation errors or missing fields
+
+```json
+// Example request body
+{
+  "fullname": {
+    "firstname": "Jane",
+    "lastname": "Doe"
+  },
+  "email": "janedoe@example.com",
+  "password": "secret123",
+  "vehicle": {
+    "color": "Red",
+    "plate": "XYZ123",
+    "capacity": 3,
+    "vehicleType": "car"
+  }
+}
+```
+
+
+
