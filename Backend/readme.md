@@ -129,7 +129,7 @@ None (authentication token is required in headers/cookies).
   "message": "Logout successful"
 }
 ```
-
+# Captain Registration  
 ## POST /captain/register
 
 ### Description
@@ -166,5 +166,56 @@ Registers a new captain account.
 }
 ```
 
+## POST /captain/login
 
+### Description
 
+Logs in an existing captain.
+
+### Required Data
+
+• email  
+• password
+
+### Response
+
+• 200 : Successful login  
+• 401 : Invalid credentials
+
+```json
+// Example request body
+{
+  "email": "janedoe@example.com",
+  "password": "secret123"
+}
+```
+
+## GET /captain/profile
+
+### Description
+
+Returns the authenticated captain's profile.
+
+### Required Data
+
+None (requires token).
+
+### Response
+
+• 200 : Captain profile returned  
+• 401 : Unauthorized
+
+## GET /captain/logout
+
+### Description
+
+Logs out the authenticated captain.
+
+### Required Data
+
+None (requires token).
+
+### Response
+
+• 200 : Logout successful  
+• 401 : Unauthorized
