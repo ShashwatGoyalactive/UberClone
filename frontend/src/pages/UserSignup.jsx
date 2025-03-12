@@ -1,32 +1,52 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom';
-
+import React, { useContext, useState } from 'react'
+import { Link , useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import {UserDataContext} from '../context/UserContext.jsx';
 const UserSignup = () => {
    const [email, setEmail] = useState("");
    const [password, setPassword] = useState("");
    const [firstname, setFirstname] = useState("");
    const [lastname, setLastname] = useState("");
-   const [userData, setUserData] = useState({
-    fullname: {
-      firstname: "",
-      lastname: ""
-    },
-     email: "",
-     password: "",
-   });
-   const submitHandler = (e) => {
+
+
+
+const navigate = useNavigate();
+
+const {user, setUser} = useContext(UserDataContext);
+
+
+   const submitHandler = async (e) => {
      e.preventDefault();
      console.log(email, password);
-     setUserData({
-      fullname :{
+   
+   
+     const newUser =  { fullname :{
         firstname,
         lastname
       },
        email,
        password,
-     });
-     console.log(userData);
+     }
+   
+     console.log(newUser);
+     console.log(import.meta.env.VITE_BASE_URL);
      
+     const response = await axios.post(
+       `${import.meta.env.VITE_BASE_URL}/users/register`,
+       newUser
+     );
+     console.log(response);
+
+
+     if(response.status === 201){
+      const data = response.data;
+      console.log(data); 
+      localStorage.setItem('token', data.token);
+      setUser(data.user); 
+      navigate('/home')
+     }
+
+
      setEmail("");
      setPassword("");
      setFirstname("");
@@ -87,7 +107,7 @@ const UserSignup = () => {
            />
 
            <button type='submit' className="bg-[#111] text-white font-semibold  mb-3  rounded px-4 py-2  w-full text-lg">
-             Register
+             Create Account
            </button>
          </form>
          <p className="text-center">

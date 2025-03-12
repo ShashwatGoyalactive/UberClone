@@ -1,7 +1,7 @@
-import Home from "./Home";
+import Home from "./Start";
 import UserLogin from "./UserLogin";
 import UserRegister from "./UserSignup";
 import CaptainLogin from "./CaptainLogin";
 import CaptainSignup from "./CaptainSignup";
-
-export { Home, UserLogin, UserRegister, CaptainLogin, CaptainSignup };
+import Start from "./Start";
+export { Home, UserLogin, UserRegister, CaptainLogin, CaptainSignup , Start};
