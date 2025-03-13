@@ -29,7 +29,7 @@ const response =  axios.get(`${import.meta.env.VITE_BASE_URL}/captains/profile`,
             Authorization : `Bearer ${token}`
         }}).then(response => {
             if(response.status === 200){
-                setCaptain(response.data.captain);
+                setCaptain(response.captain);
                 setIsLoading(false);
             }
         }).catch(error => {
