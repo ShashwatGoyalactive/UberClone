@@ -1,16 +1,23 @@
-import React , {useState, useRef} from 'react'
-import {useGSAP} from '@gsap/react';
-import gsap from 'gsap';
+import React, { useState, useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import "remixicon/fonts/remixicon.css";
+import LocationSearchPanel from "../components/LocationSearchPanel.jsx";
+import VehiclePanel from "../components/VehiclePanel.jsx";
+import ConfirmedRide from "../components/ConfirmedRide.jsx";
+
 const Home = () => {
-  const[pickup , setPickup] = useState('');
-  const[destination, setDestination] = useState('');
-  const[panelOpen , setPanelOpen] = useState(false);
+  const [pickup, setPickup] = useState("");
+  const [destination, setDestination] = useState("");
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const panelRef = useRef(null);
   const panelCloseRef = useRef(null);
-
-
+  const [vehiclePanelOpen, setVehiclePanelOpen] = useState(false); // for dsiplaying the vehicle selection only when the source and destination are selected
+  const vehiclePanelRef = useRef(null);
+  const confirmRideRef = useRef(null);
+  const [confirmRideOpen , setConfirmRideOpen] = useState(false);
+  
   const submitHandler = (e) => {
     e.preventDefault();
 
@@ -18,36 +25,60 @@ const Home = () => {
       return alert("Please fill out both pickup and destination fields");
     }
 
-    console.log(pickup , destination);
+    console.log(pickup, destination);
 
+    setDestination("");
+    setPickup("");
+  };
 
-    setDestination('');
-    setPickup('');
-  }
-
-
-  useGSAP(()=> {
-   if(panelOpen){
-     gsap.to(panelRef.current, {
-       height: "70%",
-       opacity:1
-     });
-     gsap.to(panelCloseRef.current, {
-       opacity:1
-     })
-   }else {
-     gsap.to(panelRef.current, {
-       height: "0%",
-       opacity:0
-     });
+  useGSAP(() => {
+    if (panelOpen) {
+      gsap.to(panelRef.current, {
+        height: "70%",
+        opacity: 1,
+        padding: 24,
+      });
+      gsap.to(panelCloseRef.current, {
+        opacity: 1,
+      });
+    } else {
+      gsap.to(panelRef.current, {
+        height: "0%",
+        padding: 0,
+      });
       gsap.to(panelCloseRef.current, {
         opacity: 0,
       });
-   }
-  },[panelOpen])
+    }
+  }, [panelOpen]);
+
+  useGSAP(() => {
+    if (vehiclePanelOpen) {
+      gsap.to(vehiclePanelRef.current, {
+        transform: "translateY(0)",
+      });
+    } else {
+      gsap.to(vehiclePanelRef.current, {
+        transform: "translateY(100%)",
+      });
+    }
+  }, [vehiclePanelOpen]);
+
+  useGSAP(() => {
+    if (confirmRideOpen) {
+      gsap.to(confirmRideRef.current, {
+        transform: "translateY(0)",
+      });
+    } else {
+      gsap.to(confirmRideRef.current, {
+        transform: "translateY(100%)",
+      });
+    }
+  }, [confirmRideOpen]);
+
 
   return (
-    <div className="h-screen relative">
+    <div className="h-screen relative overflow-hidden">
       <img
         className="w-16 absolute left-5 top-5"
         src="https://upload.wikimedia.org/wikipedia/commons/5/58/Uber_logo_2018.svg"
@@ -63,8 +94,13 @@ const Home = () => {
       </div>
 
       <div className=" flex flex-col justify-end h-screen absolute top-0 w-full ">
+        {/* location search panel */}
         <div className="h-[30%] p-6 bg-white relative">
-          <h5 ref={panelCloseRef} onClick={() => setPanelOpen(false) } className='opacity-0 absolute right-6 top-6 text-2xl'>
+          <h5
+            ref={panelCloseRef}
+            onClick={() => setPanelOpen(false)}
+            className="opacity-0 absolute right-6 top-6 text-2xl"
+          >
             <i className="ri-arrow-down-wide-line"></i>
           </h5>
           <h4 className="text-3xl font-semibold ">Find a trip</h4>
@@ -93,10 +129,31 @@ const Home = () => {
             />
           </form>
         </div>
-        <div ref={panelRef} className=" bg-red-500 opacity-0  h-0"></div>
+        <div ref={panelRef} className=" bg-white  h-0">
+          <LocationSearchPanel
+            setPanelOpen={setPanelOpen}
+            setVehiclePanelOpen={setVehiclePanelOpen}
+          />
+        </div>
+      </div>
+      {/* pannel for the vehicle selection (car / motocycle / auto ) */}
+      <div
+        className="fixed w-full translate-y-full  z-10 bottom-0 bg-white px-3 py-10"
+        ref={vehiclePanelRef}
+      >
+        <VehiclePanel
+          setVehiclePanelOpen={setVehiclePanelOpen}
+          setConfirmRideOpen={setConfirmRideOpen}
+        />
+      </div>
+      <div
+        className="fixed w-full translate-y-full  z-10 bottom-0 bg-white px-3 py-10"
+        ref={confirmRideRef}
+      >
+        <ConfirmedRide setConfirmRideOpen={setConfirmRideOpen} />
       </div>
     </div>
   );
-}
+};
 
 export default Home;
