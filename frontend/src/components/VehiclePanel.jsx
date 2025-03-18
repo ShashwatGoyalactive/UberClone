@@ -11,11 +11,14 @@ const VehiclePanel = (props) => {
       >
         <i className="text-3xl ri-arrow-down-wide-fill"></i>
       </h5>
-      <h3  className="text-2xl font-semibold mb-5 ">Choose a vehicle</h3>
-      <div onClick={()=> {
-        props.setConfirmRideOpen(true)
-        props.setVehiclePanelOpen(false)
-      }} className="flex border-2  border-gray-400 w-full p-3  mb-2 active:border-black rounded-xl  items-center justify-between ">
+      <h3 className="text-2xl font-semibold mb-5 ">Choose a vehicle</h3>
+      <div
+        onClick={() => {
+          props.setConfirmRideOpen(true);
+          props.setVehiclePanelOpen(false);
+        }}
+        className="flex border-2  border-gray-400 w-full p-3  mb-2 active:border-black rounded-xl  items-center justify-between "
+      >
         <img
           className="h-12 "
           src="https://www.pngplay.com/wp-content/uploads/8/Uber-PNG-Photos.png"
@@ -36,7 +39,13 @@ const VehiclePanel = (props) => {
         <h2 className="text-lg font-semibold">&#8377;193.20</h2>
       </div>
 
-      <div className="flex border-2  border-gray-400 w-full p-3  active:border-black rounded-xl  items-center mb-2 justify-between ">
+      <div
+        onClick={() => {
+          props.setConfirmRideOpen(true);
+          props.setVehiclePanelOpen(false);
+        }}
+        className="flex border-2  border-gray-400 w-full p-3  active:border-black rounded-xl  items-center mb-2 justify-between "
+      >
         <img
           className="h-12 "
           src="https://www.uber-assets.com/image/upload/f_auto,q_auto:eco,c_fill,h_368,w_552/v1648177797/assets/fc/ddecaa-2eee-48fe-87f0-614aa7cee7d3/original/Uber_Moto_312x208_pixels_Mobile.png"
@@ -57,7 +66,13 @@ const VehiclePanel = (props) => {
         <h2 className="text-lg font-semibold">&#8377;65.17</h2>
       </div>
 
-      <div className="flex border-2  border-gray-400  w-full p-3  mb-2 active:border-black rounded-xl  items-center justify-between ">
+      <div
+        onClick={() => {
+          props.setConfirmRideOpen(true);
+          props.setVehiclePanelOpen(false);
+        }}
+        className="flex border-2  border-gray-400  w-full p-3  mb-2 active:border-black rounded-xl  items-center justify-between "
+      >
         <img
           className="h-12 "
           src="https://www.uber-assets.com/image/upload/f_auto,q_auto:eco,c_fill,h_368,w_552/v1648431773/assets/1d/db8c56-0204-4ce4-81ce-56a11a07fe98/original/Uber_Auto_558x372_pixels_Desktop.png"

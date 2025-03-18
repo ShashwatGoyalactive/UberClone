@@ -138,7 +138,7 @@ const Home = () => {
       </div>
       {/* pannel for the vehicle selection (car / motocycle / auto ) */}
       <div
-        className="fixed w-full translate-y-full  z-10 bottom-0 bg-white px-3 py-10"
+        className="fixed w-full translate-y-full  z-10 bottom-0 bg-white px-3 pt-12"
         ref={vehiclePanelRef}
       >
         <VehiclePanel
@@ -147,7 +147,7 @@ const Home = () => {
         />
       </div>
       <div
-        className="fixed w-full translate-y-full  z-10 bottom-0 bg-white px-3 py-10"
+        className="fixed w-full translate-y-full  z-10 bottom-0 bg-white px-3 pt-12"
         ref={confirmRideRef}
       >
         <ConfirmedRide setConfirmRideOpen={setConfirmRideOpen} />
