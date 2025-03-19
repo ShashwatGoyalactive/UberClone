@@ -1,25 +1,27 @@
 import React from "react";
 
-const ConfirmedRide = (props) => {
+const LookingForDriver = (props) => {
   return (
     <div>
       <h5
         className="p-1 text-center  w-[93%] absolute top-0"
         onClick={() => {
-          props.setConfirmRideOpen(false);
+          props.setVehicleFound(false);
         }}
       >
         <i className="text-3xl ri-arrow-down-wide-fill"></i>
       </h5>
 
-      <h3 className="text-2xl font-semibold mb-5 mt-5">Confirm your Ride</h3>
+      <h3 className="text-2xl font-semibold mb-5 mt-5">Looking For a Driver</h3>
 
-      <div className="flex gap-2 justify-start  flex-col ">
+      <div>
         <img
           className="h-20"
           src="https://www.pngplay.com/wp-content/uploads/8/Uber-PNG-Photos.png"
           alt=""
         />
+      </div>
+      <div className="flex gap-2 justify-start  flex-col ">
         {/* pickup location */}
         <div className="flex gap-5  items-center p-3 border-b-2">
           <i className="text-lg ri-map-pin-line"></i>
@@ -48,20 +50,9 @@ const ConfirmedRide = (props) => {
             <p className="text-sm -mt-1 text-gray-600">Cash Cash</p>
           </div>
         </div>
-
-        <div className="w-full">
-          <button 
-          onClick={()=>{props.setConfirmRideOpen(false)
-            props.setVehicleFound(true)
-            props.setConfirmRideOpen(false)
-          }}
-          className="w-full bg-green-600 text-white font-semibold p-2 rounded-lg  my-5">
-            Confirm
-          </button>
-        </div>
       </div>
     </div>
   );
 };
 
-export default ConfirmedRide;
+export default LookingForDriver;
