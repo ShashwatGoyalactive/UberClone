@@ -35,17 +35,22 @@ const CaptainSignup = () => {
       },
     };
 
-    const response = await axios.post(
-      `${import.meta.env.VITE_BASE_URL}/captains/register`,
-      captainData
-    );
-
-    if (response.status === 201) {
-      const data = response.data;
-      setCaptain(data.captain);
-      localStorage.setItem("token", data.token);
-      navigate("/captain-home");
-    }
+   try {
+     const response = await axios.post(
+       `${import.meta.env.VITE_BASE_URL}/captains/register`,
+       captainData
+     );
+ 
+     if (response.status === 201) {
+       const data = response.data;
+       setCaptain(data.captain);
+       localStorage.setItem("token", data.token);
+       navigate("/captain-home");
+     }
+   } catch (error) {
+    console.log(error);
+    
+   }
 
     setEmail("");
     setFirstname("");
@@ -151,9 +156,9 @@ const CaptainSignup = () => {
               <option value="options" disabled>
                 Select Vehicle Type
               </option>
-              <option value="car">Car</option>
-              <option value="Moto">Moto</option>
-              <option value="Auto">Auto</option>
+              <option value="car">car</option>
+              <option value="motorcycle">motorcycle</option>
+              <option value="auto">auto</option>
             </select>
           </div>
 
@@ -172,9 +177,9 @@ const CaptainSignup = () => {
         </p>
       </div>
 
-      <p className="leading-tight">
+      <p className="text-[10px] mt-6  leading-tight">
         This site is protected by reCAPTCHA and the{" "}
-        <span className="underline"> Google Privacy Policy</span> and{" "}
+        <span className="underline "> Google Privacy Policy</span> and{" "}
         <span className="underline"> Terms of Service apply.</span>
       </p>
     </div>

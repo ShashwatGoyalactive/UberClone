@@ -12,17 +12,12 @@ const WaitingForDriver = (props) => {
         <i className="text-3xl ri-arrow-down-wide-fill"></i>
       </h5>
 
-      <div className='flex gap-2 items-center justify-between'>
-        <img 
-          className="h-20"
+      <div className="flex items-center justify-between">
+        <img
+          className="h-12"
           src="https://static.vecteezy.com/system/resources/thumbnails/048/216/761/small/modern-male-avatar-with-black-hair-and-hoodie-illustration-free-png.png"
-          alt=""
+          alt="cab_logo"
         />
-        <div className='text-right '>
-          <h2 className='text-lg font-medium '>Sarthak</h2>
-          <h4 className='text-xl font-semibold -mt-1 -mb-1'>MP04 AB 1234</h4>
-          <p className='text-sm text-gray-600'>Maruti Suzuki Alto</p>
-        </div>
       </div>
       <div className="flex gap-2 justify-start  flex-col ">
         {/* pickup location */}

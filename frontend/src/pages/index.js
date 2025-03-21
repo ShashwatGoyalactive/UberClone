@@ -1,7 +1,26 @@
 import Home from "./Home";
+import UserSignup from "./UserSignup";
 import UserLogin from "./UserLogin";
-import UserRegister from "./UserSignup";
-import CaptainLogin from "./CaptainLogin";
-import CaptainSignup from "./CaptainSignup";
+import UserLogout from "./UserLogout";
+import UserProtectedWrapper from "./UserProtectedWrapper";
 import Start from "./Start";
-export { Home, UserLogin, UserRegister, CaptainLogin, CaptainSignup , Start};
+import CaptainSignup from "./CaptainSignup";
+import CaptainLogin from "./CaptainLogin";
+import CaptainHome from "./CaptainHome";
+import CaptainLogout from "./CaptainLogout";
+import CaptainProtectedWrapper from "./CaptainProtectedWrapper";
+import Riding from "./Riding";
+export {
+    Home,
+    UserSignup,
+    UserLogin,
+    UserLogout,
+    UserProtectedWrapper,
+    Start,
+    CaptainSignup,
+    CaptainLogin,
+    CaptainHome,
+    CaptainLogout,
+    CaptainProtectedWrapper,
+    Riding
+};

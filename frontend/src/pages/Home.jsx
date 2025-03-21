@@ -19,8 +19,8 @@ const Home = () => {
   const vehiclePanelRef = useRef(null);
   const confirmRideRef = useRef(null);
   const [confirmRideOpen, setConfirmRideOpen] = useState(false);
-  const [waitDriverOpen, setWaitDriverOpen] = useState(false);
-  const waitDriverRef = useRef(null);
+  const [waitForDriver, setWaitForDriver] = useState(false);
+  const waitForDriverRef = useRef(null);
   const [vehicleFound, setVehicleFound] = useState(false);
   const vehicleFoundRef = useRef(null);
   const submitHandler = (e) => {
@@ -94,16 +94,16 @@ const Home = () => {
   }, [vehicleFound]);
 
   useGSAP(() => {
-    if (waitDriverOpen) {
-      gsap.to(waitDriverRef.current, {
+    if (waitForDriver) {
+      gsap.to(waitForDriverRef.current, {
         transform: "translateY(0)",
       });
     } else {
-      gsap.to(waitDriverRef.current, {
+      gsap.to(waitForDriverRef.current, {
         transform: "translateY(100%)",
       });
     }
-  }, [waitDriverOpen]);
+  }, [waitForDriver]);
 
   return (
     <div className="h-screen relative overflow-hidden">
@@ -192,8 +192,8 @@ const Home = () => {
           setVehicleFound={setVehicleFound}
         />
       </div>
-      <div ref={waitDriverRef} className="fixed w-full translate-y-full  z-10 bottom-0 bg-white px-3 pt-12">
-        <WaitingForDriver setWaitDriverOpen={setWaitDriverOpen} />
+      <div ref={waitForDriverRef} className="fixed w-full translate-y-full  z-10 bottom-0 bg-white px-3 pt-12">
+        <WaitingForDriver setWaitForDriver={setWaitForDriver} />
       </div>
     </div>
   );

@@ -14,12 +14,17 @@ const LookingForDriver = (props) => {
 
       <h3 className="text-2xl font-semibold mb-5 mt-5">Looking For a Driver</h3>
 
-      <div>
+      <div className="flex items-center justify-between">
         <img
           className="h-20"
           src="https://www.pngplay.com/wp-content/uploads/8/Uber-PNG-Photos.png"
           alt=""
         />
+        <div className="text-right">
+          <h2 className="text-lg font-medium ">Sarthak</h2>
+          <h4 className="text-xl font-semibold -mt-1 -mb-1">MP04 AB 1234</h4>
+          <p className="text-sm text-gray-600">Maruti Suzuki Alto</p>
+        </div>
       </div>
       <div className="flex gap-2 justify-start  flex-col ">
         {/* pickup location */}
