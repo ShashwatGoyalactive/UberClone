@@ -13,6 +13,7 @@ import {
   CaptainLogin,
   CaptainLogout,
   Riding,
+  CaptainRiding
 } from "./pages/index";
 
 const App = () => {
@@ -49,6 +50,7 @@ const App = () => {
         }
       ></Route>
       <Route path="/captains/logout" element={<CaptainLogout />}></Route>
+      <Route path="/captain-riding" element={<CaptainRiding />}></Route>
     </Routes>
   );
 };
