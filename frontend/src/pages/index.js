@@ -5,7 +5,7 @@ import UserLogout from "./UserLogout";
 import UserProtectedWrapper from "./UserProtectedWrapper";
 import Start from "./Start";
 import CaptainSignup from "./CaptainSignup";
-import CaptainLogin from "./CaptainLogin";
+import Captainlogin from "./Captainlogin";
 import CaptainHome from "./CaptainHome";
 import CaptainLogout from "./CaptainLogout";
 import CaptainProtectedWrapper from "./CaptainProtectedWrapper";
@@ -19,7 +19,7 @@ export {
     UserProtectedWrapper,
     Start,
     CaptainSignup,
-    CaptainLogin,
+    Captainlogin,
     CaptainHome,
     CaptainLogout,
     CaptainProtectedWrapper,
