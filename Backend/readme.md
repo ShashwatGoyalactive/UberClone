@@ -219,3 +219,4 @@ None (requires token).
 
 • 200 : Logout successful  
 • 401 : Unauthorized
+

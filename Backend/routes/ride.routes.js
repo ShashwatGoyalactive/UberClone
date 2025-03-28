@@ -17,5 +17,19 @@ router.get('/get-fare' , authMiddleware.authUser ,
     query('destination').isString().isLength({min: 3}).withMessage('Destination must be at least 3 characters long'),
     rideController.getFare);
 
+    router.post('/confirm' , authMiddleware.authCaptain , 
+    body('rideId').isMongoId().withMessage('Invalid ride id'),
+    rideController.confirmRide);
+    
+    router.get('/start-ride', authMiddleware.authCaptain ,
+        query('rideId').isMongoId().withMessage('Invalid ride id'),
+        query('otp').isString().isLength({min:6 , max:6}).withMessage('Invalid otp'),
+        rideController.startRide
+    )
 
+
+    router.post('/-end-ride' , authMiddleware.authCaptain ,
+        body('rideId').isMongoId().withMessage('Invalid ride id'),
+        rideController.endRide
+    )
 module.exports = router;
