@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, qa, stage, prod]
+  pull_request:
+    branches: [dev, qa, stage, prod]
+
+# A newer push to the same branch cancels the run for the code it replaced.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+
+    # A throwaway PostGIS for the integration suite: empty, local to the
+    # job, gone with it. Needs no secret, so the password sits in plain
+    # sight on purpose.
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: comet_test
+        ports:
+          - 54330:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54330/comet_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Also runs `prisma generate` (postinstall), which needs no database:
+      # the Prisma client is created lazily.
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      # Separate steps so a red build names which kind of test broke.
+      - name: Unit tests
+        run: npm test
+
+      - name: Integration tests (migrations + database)
+        run: npm run test:integration
+
+      # Deliberately no secrets: nothing may touch a database or an
+      # external API at build time. If this starts failing for a missing
+      # variable, something now runs during the build that shouldn't.
+      - name: Build
+        run: npm run build
+
+  e2e:
+    name: End-to-end
+    needs: check
+    if: github.ref != 'refs/heads/dev' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      # The full local Supabase stack (auth, mail catcher, Postgres), the
+      # same one used in development. Its keys are the CLI's public local
+      # defaults, not secrets.
+      - name: Start local Supabase
+        run: npx supabase start -x edge-runtime,logflare,vector,imgproxy,supavisor,studio
+
+      - name: Write .env.local for the local stack
+        run: |
+          npx supabase status -o env > /tmp/sb.env
+          set -a; . /tmp/sb.env; set +a
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "DATABASE_URL=$DB_URL"
+            echo "DIRECT_URL=$DB_URL"
+            echo "NEXT_PUBLIC_APP_URL=http://localhost:3100"
+            echo "APP_ENV=dev"
+          } > .env.local
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

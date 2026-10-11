@@ -1,0 +1,150 @@
+// Comet schema. docs/DATABASE.md is the source of truth; this file
+// implements it and changes in the same commit as the doc.
+//
+// Prisma 7 takes no connection URL here. The app connects through a
+// driver adapter (lib/db.ts) on Supabase's pooled endpoint; migrations
+// use the direct endpoint, configured in prisma.config.ts.
+//
+// Every table also needs row-level security switched on (with no
+// policies) in its migration, so Supabase's public REST API can't read
+// it. tests/integration/rls.int.test.ts fails if any table is missed.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- identity
+
+enum ThemePreference {
+  system
+  light
+  dark
+
+  @@map("theme_preference")
+}
+
+enum DemoRole {
+  rider
+  pilot
+
+  @@map("demo_role")
+}
+
+/// One row per Supabase auth user; `id` equals auth.users.id.
+///
+/// There is deliberately no foreign key to auth.users. That table lives in
+/// Supabase's own schema, which the throwaway Postgres used by CI doesn't
+/// have, and a constraint the tests can't run against is one nobody can
+/// trust. The link is kept by code: this row is created by the auth
+/// service right after sign-in, and deleted alongside the auth user.
+model User {
+  id            String          @id @db.Uuid
+  /// Public, permanent identifier: "CMT-" + 6 Crockford base32 characters.
+  /// Never reused, never changed — see lib/comet-id.ts.
+  cometId       String          @unique @map("comet_id") @db.Char(10)
+  displayName   String          @map("display_name") @db.VarChar(60)
+  email         String?         @unique @db.VarChar(254)
+  avatarPath    String?         @map("avatar_path")
+  /// Argon2id hash of the 4-digit safety PIN that ends an SOS. Never the PIN.
+  safetyPinHash String?         @map("safety_pin_hash")
+  isDemo        Boolean         @default(false) @map("is_demo")
+  demoRole      DemoRole?       @map("demo_role")
+  locale        String          @default("en") @db.VarChar(8)
+  theme         ThemePreference @default(system)
+  hideLastName  Boolean         @default(false) @map("hide_last_name")
+  deletedAt     DateTime?       @map("deleted_at") @db.Timestamptz
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+
+  riderProfile RiderProfile?
+  pilotProfile PilotProfile? @relation("PilotProfileUser")
+
+  @@index([isDemo, createdAt], map: "users_demo_created_idx")
+  @@map("users")
+}
+
+enum WomenOnlyMode {
+  off
+  always
+  night
+
+  @@map("women_only_mode")
+}
+
+enum WomenOnlyFallback {
+  ask
+  wait
+
+  @@map("women_only_fallback")
+}
+
+enum PilotStatus {
+  pending
+  approved
+  rejected
+  suspended
+
+  @@map("pilot_status")
+}
+
+enum VehicleType {
+  bike
+  auto
+  car
+
+  @@map("vehicle_type")
+}
+
+enum RideTier {
+  bike
+  auto
+  go
+  prime
+
+  @@map("ride_tier")
+}
+
+/// Created the first time someone uses the rider app.
+model RiderProfile {
+  userId            String            @id @map("user_id") @db.Uuid
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ratingAvg         Decimal?          @map("rating_avg") @db.Decimal(3, 2)
+  ratingCount       Int               @default(0) @map("rating_count")
+  womenOnlyMode     WomenOnlyMode     @default(off) @map("women_only_mode")
+  womenOnlyFallback WomenOnlyFallback @default(ask) @map("women_only_fallback")
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("rider_profiles")
+}
+
+/// A Pilot. Vehicle details are nullable while onboarding is in progress;
+/// a database check requires them all before status can be "approved".
+model PilotProfile {
+  userId              String        @id @map("user_id") @db.Uuid
+  user                User          @relation("PilotProfileUser", fields: [userId], references: [id], onDelete: Cascade)
+  status              PilotStatus   @default(pending)
+  vehicleType         VehicleType?  @map("vehicle_type")
+  tier                RideTier?
+  vehicleModel        String?       @map("vehicle_model") @db.VarChar(60)
+  vehicleColour       String?       @map("vehicle_colour") @db.VarChar(30)
+  plate               String?       @db.VarChar(16)
+  seats               Int?
+  ratingAvg           Decimal?      @map("rating_avg") @db.Decimal(3, 2)
+  ratingCount         Int           @default(0) @map("rating_count")
+  womenPassengersMode WomenOnlyMode @default(off) @map("women_passengers_mode")
+  /// A bot Pilot that drives demo rides (docs/ARCHITECTURE.md §9).
+  isSimulated         Boolean       @default(false) @map("is_simulated")
+  /// The demo rider this bot serves; null for ambient bots and real Pilots.
+  simulatedForUserId  String?       @map("simulated_for_user_id") @db.Uuid
+  approvedAt          DateTime?     @map("approved_at") @db.Timestamptz
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([simulatedForUserId], map: "pilot_profiles_simulated_for_idx")
+  @@map("pilot_profiles")
+}
