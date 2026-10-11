@@ -3,10 +3,16 @@ import { defineConfig } from "prisma/config";
 // Prisma 7 no longer loads env files by itself. Next reads .env.local for
 // the app, so the CLI reads the same file; in CI and on Vercel the
 // variables are already in the environment and the file doesn't exist.
+//
+// COMET_ENV_FILE points the CLI at a cloud environment instead — that's
+// how `npm run db:deploy:staging` / `:prod` apply migrations to the
+// Supabase projects (docs/ENVIRONMENTS.md). Those files must exist; the
+// default .env.local may not.
+const envFile = process.env.COMET_ENV_FILE;
 try {
-  process.loadEnvFile(".env.local");
-} catch {
-  // No file — use the environment as-is.
+  process.loadEnvFile(envFile ?? ".env.local");
+} catch (err) {
+  if (envFile) throw new Error(`COMET_ENV_FILE=${envFile} could not be read: ${String(err)}`);
 }
 
 /**

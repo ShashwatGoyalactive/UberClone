@@ -19,7 +19,9 @@
     "db:migrate": "prisma migrate dev",
     "db:test:up": "docker run -d --rm --name comet-test-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=comet_test -p 54330:5432 postgis/postgis:16-3.4",
     "db:test:down": "docker stop comet-test-db",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:deploy:staging": "COMET_ENV_FILE=.env.staging.local prisma migrate deploy",
+    "db:deploy:prod": "COMET_ENV_FILE=.env.prod.local prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.9.1",
