@@ -9,6 +9,9 @@
 
 export type LatLng = { lat: number; lng: number };
 
+/** HSR Layout, Bengaluru — where maps open when location is unavailable. */
+export const DEFAULT_CENTER: LatLng = { lat: 12.9116, lng: 77.6474 };
+
 const EARTH_RADIUS_M = 6_371_008.8;
 
 /** Bounding box Comet accepts coordinates in (docs/DATABASE.md §7). */

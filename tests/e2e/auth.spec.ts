@@ -28,7 +28,10 @@ test("demo rider: one click to a signed-in account with a Comet ID", async ({ pa
 
   await page.getByRole("button", { name: "Start riding" }).click();
   await expect(page).toHaveURL(/\/ride$/);
-  await expect(page.getByRole("heading", { name: "Hi, Aarav" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /, Aarav$/ })).toBeVisible();
+
+  await page.getByRole("link", { name: "Account" }).first().click();
+  await expect(page).toHaveURL(/\/ride\/account$/);
   await expect(page.getByText("Rider · demo")).toBeVisible();
   const id = await cometIdOnPage(page);
 
@@ -74,6 +77,7 @@ test("email code: sign in, land on /ride with a new Comet ID, sign out", async (
   await page.getByLabel("6-digit code").pressSequentially(code);
 
   await expect(page).toHaveURL(/\/ride$/);
+  await page.goto("/ride/account");
   await expect(page.getByText(/^Rider$/)).toBeVisible();
   await cometIdOnPage(page);
 

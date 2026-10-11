@@ -29,6 +29,8 @@ export default defineConfig({
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
-    env: { COMET_FAKE_EXTERNALS: "1" },
+    // Fake maps and payments, and no Mapbox token, so the drawn map is used and
+    // routes are deterministic. An env var set here beats .env.local.
+    env: { COMET_FAKE_EXTERNALS: "1", NEXT_PUBLIC_MAPBOX_TOKEN: "" },
   },
 });

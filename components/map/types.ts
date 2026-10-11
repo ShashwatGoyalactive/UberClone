@@ -1,0 +1,21 @@
+import type { LatLng } from "@/lib/geo";
+
+/** What a map screen asks the map to show. Browser-safe. */
+export type MapViewProps = {
+  /** Where the map centres when there is no route to fit. */
+  center: LatLng;
+  /** The rider's own position, shown as the blue pulsing dot. */
+  you?: LatLng;
+  pickup?: LatLng;
+  drop?: LatLng;
+  /** [lng, lat] pairs, GeoJSON order. */
+  route?: [number, number][];
+  /**
+   * Fraction of the map hidden under the bottom sheet (0–1), so the route
+   * is fitted into the visible part rather than behind the sheet.
+   */
+  bottomInset?: number;
+  className?: string;
+};
+
+export { DEFAULT_CENTER } from "@/lib/geo";
