@@ -7,6 +7,7 @@ import { VehicleIcon } from "@/components/icons/Vehicle";
 import { RiderTabBar } from "@/components/RiderTabBar";
 import { requireUser } from "@/lib/auth/session";
 import { RIDE_TIERS, TIER_RATES } from "@/lib/fares";
+import { getRiderActiveRide } from "@/lib/services/rides";
 
 import { HomeMap } from "./HomeMap";
 
@@ -30,6 +31,7 @@ function greeting(now = new Date()) {
 export default async function RideHomePage() {
   const user = await requireUser("/ride");
   const firstName = user.displayName.split(" ")[0];
+  const activeRide = await getRiderActiveRide(user.id);
 
   return (
     <AppFrame>
@@ -54,6 +56,18 @@ export default async function RideHomePage() {
             <h1 className="font-heading text-2xl font-bold tracking-tight">
               {greeting()}, {firstName}
             </h1>
+
+            {activeRide && (
+              <Link
+                href="/ride/trip"
+                className="flex items-center justify-between gap-3 rounded-lg bg-brand-soft px-4 py-3.5 font-semibold text-brand-text"
+              >
+                {activeRide.status === "requested"
+                  ? "Finding your Pilot…"
+                  : "Your ride is in progress"}
+                <span className="text-sm">View →</span>
+              </Link>
+            )}
 
             <Link
               href="/ride/plan"

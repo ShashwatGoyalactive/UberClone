@@ -24,6 +24,13 @@ export default async function setup() {
   const client = new Client({ connectionString: url });
   await client.connect();
   await client.query("DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;");
+  // Supabase keeps extensions (PostGIS) in an `extensions` schema that its
+  // default search_path includes. Mirror that, so unqualified `geography`
+  // in migrations resolves here exactly as it does on Supabase.
+  await client.query(`DROP SCHEMA IF EXISTS extensions CASCADE`);
+  await client.query(
+    `ALTER DATABASE "${new URL(url).pathname.slice(1)}" SET search_path TO "$user", public, extensions`,
+  );
   // Supabase grants these roles access to public tables. The RLS test
   // needs them to exist to prove they can't read anything.
   await client.query(`

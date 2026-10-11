@@ -8,6 +8,8 @@ export type MapViewProps = {
   you?: LatLng;
   pickup?: LatLng;
   drop?: LatLng;
+  /** The Pilot's car, moving live during a trip. */
+  car?: LatLng;
   /** [lng, lat] pairs, GeoJSON order. */
   route?: [number, number][];
   /**

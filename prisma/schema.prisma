@@ -60,9 +60,13 @@ model User {
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz
 
-  riderProfile RiderProfile?
-  pilotProfile PilotProfile? @relation("PilotProfileUser")
-  fareQuotes   FareQuote[]
+  riderProfile  RiderProfile?
+  pilotProfile  PilotProfile?  @relation("PilotProfileUser")
+  fareQuotes    FareQuote[]
+  pilotLocation PilotLocation?
+  ridesAsRider  Ride[]         @relation("RideRider")
+  ridesAsPilot  Ride[]         @relation("RidePilot")
+  rideOffers    RideOffer[]
 
   @@index([isDemo, createdAt], map: "users_demo_created_idx")
   @@map("users")
@@ -116,25 +120,25 @@ enum RideTier {
 /// are looked up by id, never searched spatially, so they don't need
 /// PostGIS (pilot_locations will).
 model FareQuote {
-  id                String   @id @default(uuid()) @db.Uuid
-  riderId           String   @map("rider_id") @db.Uuid
-  pickupAddress     String   @map("pickup_address") @db.VarChar(200)
-  pickupLat         Float    @map("pickup_lat")
-  pickupLng         Float    @map("pickup_lng")
-  dropAddress       String   @map("drop_address") @db.VarChar(200)
-  dropLat           Float    @map("drop_lat")
-  dropLng           Float    @map("drop_lng")
-  distanceM         Int      @map("distance_m")
-  durationS         Int      @map("duration_s")
+  id               String   @id @default(uuid()) @db.Uuid
+  riderId          String   @map("rider_id") @db.Uuid
+  pickupAddress    String   @map("pickup_address") @db.VarChar(200)
+  pickupLat        Float    @map("pickup_lat")
+  pickupLng        Float    @map("pickup_lng")
+  dropAddress      String   @map("drop_address") @db.VarChar(200)
+  dropLat          Float    @map("drop_lat")
+  dropLng          Float    @map("drop_lng")
+  distanceM        Int      @map("distance_m")
+  durationS        Int      @map("duration_s")
   /// GeoJSON LineString coordinates, [lng, lat] pairs.
-  routeCoordinates  Json     @map("route_coordinates")
+  routeCoordinates Json     @map("route_coordinates")
   /// True when routing was unavailable and the distance is an estimate.
-  isEstimate        Boolean  @default(false) @map("is_estimate")
+  isEstimate       Boolean  @default(false) @map("is_estimate")
   /// Total fare per tier in paise: { bike, auto, go, prime }.
-  prices            Json
-  surge             Decimal  @default(1.00) @db.Decimal(3, 2)
-  expiresAt         DateTime @map("expires_at") @db.Timestamptz
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  prices           Json
+  surge            Decimal  @default(1.00) @db.Decimal(3, 2)
+  expiresAt        DateTime @map("expires_at") @db.Timestamptz
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   rider User @relation(fields: [riderId], references: [id], onDelete: Cascade)
 
@@ -181,4 +185,175 @@ model PilotProfile {
 
   @@index([simulatedForUserId], map: "pilot_profiles_simulated_for_idx")
   @@map("pilot_profiles")
+}
+
+// ------------------------------------------------------------ live Pilots
+
+/// One row per Pilot, updated in place every few seconds while online.
+/// The only PostGIS column in the schema: matching searches it by distance
+/// (GIST index in the migration). Written and read with raw SQL.
+model PilotLocation {
+  pilotId       String                                @id @map("pilot_id") @db.Uuid
+  locationPoint Unsupported("geography(Point, 4326)") @map("location_point")
+  headingDeg    Float?                                @map("heading_deg")
+  speedKmh      Float?                                @map("speed_kmh")
+  isOnline      Boolean                               @default(false) @map("is_online")
+  /// False while the Pilot is on a ride, so they get no new offers.
+  isAvailable   Boolean                               @default(true) @map("is_available")
+  updatedAt     DateTime                              @default(now()) @map("updated_at") @db.Timestamptz
+
+  pilot User @relation(fields: [pilotId], references: [id], onDelete: Cascade)
+
+  @@map("pilot_locations")
+}
+
+// ------------------------------------------------------------------ rides
+
+enum RideStatus {
+  requested
+  accepted
+  arrived
+  in_progress
+  completed
+  cancelled
+  expired
+  no_show
+
+  @@map("ride_status")
+}
+
+enum PaymentMethod {
+  wallet
+  upi
+  card
+  cash
+
+  @@map("payment_method")
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+  waived
+
+  @@map("payment_status")
+}
+
+enum CancelledBy {
+  rider
+  pilot
+  system
+
+  @@map("cancelled_by")
+}
+
+enum ActorRole {
+  rider
+  pilot
+  system
+  ops
+
+  @@map("actor_role")
+}
+
+enum OfferStatus {
+  offered
+  accepted
+  declined
+  expired
+  taken
+
+  @@map("offer_status")
+}
+
+/// A ride. Status changes only along lib/ride-state.ts, enforced again by a
+/// trigger in the database; every change is recorded in ride_events.
+model Ride {
+  id                   String        @id @default(uuid()) @db.Uuid
+  riderId              String        @map("rider_id") @db.Uuid
+  pilotId              String?       @map("pilot_id") @db.Uuid
+  quoteId              String        @map("quote_id") @db.Uuid
+  tier                 RideTier
+  status               RideStatus    @default(requested)
+  pickupAddress        String        @map("pickup_address") @db.VarChar(200)
+  pickupLat            Float         @map("pickup_lat")
+  pickupLng            Float         @map("pickup_lng")
+  dropAddress          String        @map("drop_address") @db.VarChar(200)
+  dropLat              Float         @map("drop_lat")
+  dropLng              Float         @map("drop_lng")
+  routeCoordinates     Json          @map("route_coordinates")
+  distanceM            Int           @map("distance_m")
+  durationS            Int           @map("duration_s")
+  farePaise            Int           @map("fare_paise")
+  discountPaise        Int           @default(0) @map("discount_paise")
+  waitingFeePaise      Int           @default(0) @map("waiting_fee_paise")
+  cancellationFeePaise Int           @default(0) @map("cancellation_fee_paise")
+  totalPaise           Int           @map("total_paise")
+  paymentMethod        PaymentMethod @map("payment_method")
+  paymentStatus        PaymentStatus @default(pending) @map("payment_status")
+  /// The 4-digit code the rider gives the Pilot to start the trip. Only
+  /// ever returned to the rider (docs/DATABASE.md §10).
+  rideCode             String        @map("ride_code") @db.Char(4)
+  rideCodeAttempts     Int           @default(0) @map("ride_code_attempts")
+  womenOnly            Boolean       @default(false) @map("women_only")
+  isDemo               Boolean       @default(false) @map("is_demo")
+  simulationStartedAt  DateTime?     @map("simulation_started_at") @db.Timestamptz
+  requestedAt          DateTime      @default(now()) @map("requested_at") @db.Timestamptz
+  acceptedAt           DateTime?     @map("accepted_at") @db.Timestamptz
+  arrivedAt            DateTime?     @map("arrived_at") @db.Timestamptz
+  startedAt            DateTime?     @map("started_at") @db.Timestamptz
+  completedAt          DateTime?     @map("completed_at") @db.Timestamptz
+  cancelledAt          DateTime?     @map("cancelled_at") @db.Timestamptz
+  cancelledBy          CancelledBy?  @map("cancelled_by")
+  cancelReason         String?       @map("cancel_reason") @db.VarChar(200)
+  city                 String        @default("blr") @db.VarChar(8)
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  rider  User        @relation("RideRider", fields: [riderId], references: [id], onDelete: Restrict)
+  pilot  User?       @relation("RidePilot", fields: [pilotId], references: [id], onDelete: Restrict)
+  offers RideOffer[]
+  events RideEvent[]
+
+  @@index([riderId, requestedAt(sort: Desc)], map: "rides_rider_requested_idx")
+  @@index([pilotId, completedAt(sort: Desc)], map: "rides_pilot_completed_idx")
+  @@map("rides")
+}
+
+/// A ride offered to one Pilot. A wave offers up to 3 Pilots at once; the
+/// first accept wins and the others become "taken".
+model RideOffer {
+  id          String      @id @default(uuid()) @db.Uuid
+  rideId      String      @map("ride_id") @db.Uuid
+  pilotId     String      @map("pilot_id") @db.Uuid
+  wave        Int
+  status      OfferStatus @default(offered)
+  offeredAt   DateTime    @default(now()) @map("offered_at") @db.Timestamptz
+  expiresAt   DateTime    @map("expires_at") @db.Timestamptz
+  respondedAt DateTime?   @map("responded_at") @db.Timestamptz
+
+  ride  Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  pilot User @relation(fields: [pilotId], references: [id], onDelete: Cascade)
+
+  @@unique([rideId, pilotId], map: "ride_offers_ride_pilot_key")
+  @@map("ride_offers")
+}
+
+/// Append-only audit trail of every ride state change (a trigger rejects
+/// UPDATE and DELETE).
+model RideEvent {
+  id        String    @id @default(uuid()) @db.Uuid
+  rideId    String    @map("ride_id") @db.Uuid
+  type      String    @db.VarChar(40)
+  actorId   String?   @map("actor_id") @db.Uuid
+  actorRole ActorRole @map("actor_role")
+  data      Json      @default("{}")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+
+  @@index([rideId, createdAt], map: "ride_events_ride_created_idx")
+  @@map("ride_events")
 }

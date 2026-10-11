@@ -44,6 +44,9 @@ test("demo Pilot: gets an approved Pilot profile with the demo car", async ({ pa
   await page.goto("/demo?role=pilot");
   await page.getByRole("button", { name: "Start driving" }).click();
   await expect(page).toHaveURL(/\/pilot$/);
+  await expect(page.getByRole("button", { name: "Go online" })).toBeVisible();
+  await page.getByRole("link", { name: "Pilot account" }).click();
+  await expect(page).toHaveURL(/\/pilot\/account$/);
   await expect(page.getByText("White Maruti Swift Dzire")).toBeVisible();
   await expect(page.getByText("KA 05 MX 2841")).toBeVisible();
   await expect(page.getByText(/approved/)).toBeVisible();

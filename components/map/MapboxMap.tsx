@@ -24,20 +24,22 @@ const STYLE = {
   dark: "mapbox://styles/mapbox/dark-v11",
 };
 
-function markerEl(kind: "you" | "pickup" | "drop") {
+function markerEl(kind: "you" | "pickup" | "drop" | "car") {
   const el = document.createElement("div");
   el.setAttribute("aria-hidden", "true");
   el.className =
-    kind === "you"
-      ? "size-5 rounded-full border-4 border-white bg-info shadow-float"
-      : kind === "pickup"
-        ? "size-[18px] rounded-full border-[5px] border-ink bg-white"
-        : "size-5 rounded-[4px] border-[3px] border-white bg-ink";
+    kind === "car"
+      ? "h-[30px] w-[18px] rounded-md border-[2.5px] border-white bg-primary shadow-float"
+      : kind === "you"
+        ? "size-5 rounded-full border-4 border-white bg-info shadow-float"
+        : kind === "pickup"
+          ? "size-[18px] rounded-full border-[5px] border-ink bg-white"
+          : "size-5 rounded-[4px] border-[3px] border-white bg-ink";
   return el;
 }
 
 export default function MapboxMap(props: MapViewProps) {
-  const { center, you, pickup, drop, route, bottomInset = 0, className } = props;
+  const { center, you, pickup, drop, car, route, bottomInset = 0, className } = props;
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
@@ -86,7 +88,10 @@ export default function MapboxMap(props: MapViewProps) {
 
     markers.current.forEach((mk) => mk.remove());
     markers.current = [];
-    const add = (p: { lat: number; lng: number } | undefined, kind: "you" | "pickup" | "drop") => {
+    const add = (
+      p: { lat: number; lng: number } | undefined,
+      kind: "you" | "pickup" | "drop" | "car",
+    ) => {
       if (p)
         markers.current.push(
           new mapboxgl.Marker({ element: markerEl(kind) }).setLngLat([p.lng, p.lat]).addTo(m),
@@ -95,6 +100,7 @@ export default function MapboxMap(props: MapViewProps) {
     if (!pickup) add(you, "you");
     add(pickup, "pickup");
     add(drop, "drop");
+    add(car, "car");
 
     const data: GeoJSON.Feature = {
       type: "Feature",
@@ -132,7 +138,7 @@ export default function MapboxMap(props: MapViewProps) {
     } else {
       m.easeTo({ center: [center.lng, center.lat], padding, duration: 600, zoom: 14.5 });
     }
-  }, [ready, center, you, pickup, drop, route, bottomInset]);
+  }, [ready, center, you, pickup, drop, car, route, bottomInset]);
 
   if (failed) return <FallbackMap {...props} />;
   return (

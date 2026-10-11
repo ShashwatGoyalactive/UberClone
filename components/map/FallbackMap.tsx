@@ -20,13 +20,16 @@ export function FallbackMap({
   you,
   pickup,
   drop,
+  car,
   route,
   bottomInset = 0,
   className,
 }: MapViewProps) {
   const pts: [number, number][] = [
     ...(route ?? []),
-    ...[you, pickup, drop, center].filter(Boolean).map((p) => [p!.lng, p!.lat] as [number, number]),
+    ...[you, pickup, drop, car, center]
+      .filter(Boolean)
+      .map((p) => [p!.lng, p!.lat] as [number, number]),
   ];
 
   // Fit everything into the part of the map above the sheet.
@@ -52,6 +55,7 @@ export function FallbackMap({
   const youXY = at(you);
   const pickupXY = at(pickup);
   const dropXY = at(drop);
+  const carXY = at(car);
 
   return (
     <div
@@ -102,6 +106,21 @@ export function FallbackMap({
             stroke="var(--ink)"
             strokeWidth="5"
           />
+        )}
+        {carXY && (
+          <g transform={`translate(${carXY[0]} ${carXY[1]})`} data-testid="car-marker">
+            <circle r="22" fill="var(--primary)" opacity="0.22" />
+            <rect
+              x="-9"
+              y="-15"
+              width="18"
+              height="30"
+              rx="6"
+              fill="var(--primary)"
+              stroke="#fff"
+              strokeWidth="2.5"
+            />
+          </g>
         )}
         {youXY && !pickupXY && (
           <g>

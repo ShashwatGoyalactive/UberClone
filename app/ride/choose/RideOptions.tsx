@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Banknote } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 
 import { VehicleIcon } from "@/components/icons/Vehicle";
 import { Button } from "@/components/ui/button";
@@ -8,9 +10,40 @@ import { RIDE_TIERS, TIER_RATES, type RideTier } from "@/lib/fares";
 import { formatRupees, type Paise } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
+import { bookRideAction } from "../actions";
+
 /** The tier list and Book button on "4 · Choose ride". Prices come from the server's quote. */
-export function RideOptions({ prices }: { prices: Record<RideTier, Paise> }) {
+export function RideOptions({
+  quoteId,
+  prices,
+}: {
+  quoteId: string;
+  prices: Record<RideTier, Paise>;
+}) {
+  const router = useRouter();
   const [tier, setTier] = useState<RideTier>("go");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function book() {
+    setError(null);
+    startTransition(async () => {
+      const result = await bookRideAction({ quoteId, tier, paymentMethod: "cash" });
+      if (result.ok) {
+        router.push("/ride/trip");
+        return;
+      }
+      if (result.code === "CONFLICT" && result.message.includes("already have a ride")) {
+        router.push("/ride/trip");
+        return;
+      }
+      if (result.code === "CONFLICT") {
+        // The 5-minute price hold ran out: fetch fresh prices in place.
+        router.refresh();
+      }
+      setError(result.message);
+    });
+  }
 
   return (
     <>
@@ -46,12 +79,22 @@ export function RideOptions({ prices }: { prices: Record<RideTier, Paise> }) {
         })}
       </div>
 
-      <Button disabled className="h-14 rounded-lg text-[17px] font-bold">
-        Book {TIER_RATES[tier].label}
+      <div className="flex h-12 items-center gap-2 rounded-md border border-border px-3 text-sm font-semibold">
+        <Banknote className="size-[18px] text-brand-text" aria-hidden />
+        Pay with cash
+        <span className="ml-auto text-xs font-medium text-muted-foreground">
+          Wallet &amp; UPI coming soon
+        </span>
+      </div>
+
+      {error && (
+        <p role="alert" className="text-sm font-semibold text-danger-text">
+          {error}
+        </p>
+      )}
+      <Button onClick={book} disabled={pending} className="h-14 rounded-lg text-[17px] font-bold">
+        {pending ? "Booking…" : `Book ${TIER_RATES[tier].label}`}
       </Button>
-      <p className="text-center text-xs text-muted-foreground">
-        Booking opens in the next build phase. Prices are held for 5 minutes.
-      </p>
     </>
   );
 }

@@ -80,7 +80,7 @@ export default async function ChoosePage({ searchParams }: PageProps<"/ride/choo
                   Live routing is unavailable, so distance is estimated. Prices may change slightly.
                 </p>
               )}
-              <RideOptions prices={quote.prices} />
+              <RideOptions quoteId={quote.quoteId} prices={quote.prices} />
             </>
           ) : (
             <div className="flex flex-col gap-4 py-2">
