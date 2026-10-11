@@ -4,8 +4,10 @@ import { Check, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
+import { RatingForm } from "@/components/RatingForm";
 import { Button } from "@/components/ui/button";
 import { formatRupees, type Paise } from "@/lib/money";
+import { starString } from "@/lib/ratings";
 import type { RideView } from "@/lib/services/rides";
 import { cn } from "@/lib/utils";
 import { MAX_CASH_OVER, PAYMENT_METHOD_LABELS } from "@/lib/wallet";
@@ -50,6 +52,7 @@ export function TripSettlement({
   onDone: () => void;
 }) {
   const [collecting, setCollecting] = useState(ride.paymentMethod === "cash");
+  const [rated, setRated] = useState<number | null>(null);
   const paid = ride.paymentStatus === "paid";
 
   if (paid) {
@@ -73,6 +76,20 @@ export function TripSettlement({
             Your share {formatRupees(share(ride))} · Comet fee {formatRupees(ride.platformFeePaise)}
           </span>
         </section>
+        {rated === null ? (
+          <section className="rounded-xl bg-card p-4">
+            <RatingForm
+              rideId={ride.id}
+              rateeName={ride.rider?.firstName ?? "the rider"}
+              side="pilot"
+              onRated={setRated}
+            />
+          </section>
+        ) : (
+          <p role="status" className="text-center text-sm font-semibold text-info">
+            Thanks — you rated {ride.rider?.firstName ?? "the rider"} {starString(rated)}
+          </p>
+        )}
         <Link
           href="/pilot/earnings"
           className="text-center text-sm font-semibold text-info hover:underline"

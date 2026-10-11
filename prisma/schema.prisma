@@ -69,7 +69,10 @@ model User {
   rideOffers    RideOffer[]
   walletEntries WalletEntry[]
   payments      Payment[]
+  ratings       Rating[]
   payouts       Payout[]
+  ratingsGiven  Rating[]       @relation("RatingRater")
+  ratingsGot    Rating[]       @relation("RatingRatee")
 
   @@index([isDemo, createdAt], map: "users_demo_created_idx")
   @@map("users")
@@ -155,6 +158,9 @@ model RiderProfile {
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   ratingAvg         Decimal?          @map("rating_avg") @db.Decimal(3, 2)
   ratingCount       Int               @default(0) @map("rating_count")
+  /// Demo only: a bot Pilot accepts this rider's rides if no real Pilot does.
+  /// Riders switch it off to test with a real Pilot demo in another tab.
+  simulatedPilot    Boolean           @default(true) @map("simulated_pilot")
   womenOnlyMode     WomenOnlyMode     @default(off) @map("women_only_mode")
   womenOnlyFallback WomenOnlyFallback @default(ask) @map("women_only_fallback")
   createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz
@@ -296,6 +302,8 @@ model Ride {
   totalPaise           Int           @map("total_paise")
   /// Comet's 15% of the fare, fixed at booking (splitFare in lib/fares.ts).
   platformFeePaise     Int           @default(0) @map("platform_fee_paise")
+  /// Added by the rider when rating; paid from their wallet, 100% to the Pilot.
+  tipPaise             Int           @default(0) @map("tip_paise")
   paymentMethod        PaymentMethod @map("payment_method")
   paymentStatus        PaymentStatus @default(pending) @map("payment_status")
   /// The 4-digit code the rider gives the Pilot to start the trip. Only
@@ -323,6 +331,7 @@ model Ride {
   events        RideEvent[]
   walletEntries WalletEntry[]
   payments      Payment[]
+  ratings       Rating[]
 
   @@index([riderId, requestedAt(sort: Desc)], map: "rides_rider_requested_idx")
   @@index([pilotId, completedAt(sort: Desc)], map: "rides_pilot_completed_idx")
@@ -467,4 +476,27 @@ model Payout {
 
   @@index([pilotId, createdAt(sort: Desc)], map: "payouts_pilot_created_idx")
   @@map("payouts")
+}
+
+/// One rating per ride per side (docs/DATABASE.md "ratings"). Written by
+/// comet_rate_ride together with the ratee's average and any tip.
+model Rating {
+  id        String   @id @default(uuid()) @db.Uuid
+  rideId    String   @map("ride_id") @db.Uuid
+  raterId   String   @map("rater_id") @db.Uuid
+  rateeId   String   @map("ratee_id") @db.Uuid
+  stars     Int      @db.SmallInt
+  tags      String[] @default([])
+  comment   String?  @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  ride   Ride    @relation(fields: [rideId], references: [id], onDelete: Restrict)
+  rater  User    @relation("RatingRater", fields: [raterId], references: [id], onDelete: Restrict)
+  ratee  User    @relation("RatingRatee", fields: [rateeId], references: [id], onDelete: Restrict)
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String? @db.Uuid
+
+  @@unique([rideId, raterId], map: "ratings_ride_rater_key")
+  @@index([rateeId, createdAt(sort: Desc)], map: "ratings_ratee_created_idx")
+  @@map("ratings")
 }

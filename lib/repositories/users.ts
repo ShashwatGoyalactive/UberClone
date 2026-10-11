@@ -50,8 +50,23 @@ export async function setDemoRole(userId: string, demoRole: DemoRole): Promise<v
   await db.user.update({ where: { id: userId }, data: { demoRole } });
 }
 
-export async function ensureRiderProfile(userId: string): Promise<void> {
-  await db.riderProfile.upsert({ where: { userId }, create: { userId }, update: {} });
+export async function ensureRiderProfile(
+  userId: string,
+  settings: { simulatedPilot?: boolean } = {},
+): Promise<void> {
+  await db.riderProfile.upsert({
+    where: { userId },
+    create: { userId, ...settings },
+    update: settings,
+  });
+}
+
+export async function wantsSimulatedPilot(riderId: string): Promise<boolean> {
+  const profile = await db.riderProfile.findUnique({
+    where: { userId: riderId },
+    select: { simulatedPilot: true },
+  });
+  return profile?.simulatedPilot ?? true;
 }
 
 export type DemoVehicle = {

@@ -25,7 +25,9 @@ import { findUser } from "@/lib/repositories/users";
 import { isActive, type RideStatus } from "@/lib/ride-state";
 import { offerNextWave, refreshRequestedRide } from "@/lib/services/matching";
 import { getValidQuote } from "@/lib/services/quotes";
-import { walletBalance } from "@/lib/repositories/wallet";
+import { chargeCancellation, walletBalance } from "@/lib/repositories/wallet";
+import { announceBalance } from "@/lib/services/wallet";
+import { CANCEL_REASONS, cancellationFee, type CancelReasonId } from "@/lib/cancellation";
 import type { PaymentMethod } from "@/lib/wallet";
 
 /**
@@ -46,14 +48,18 @@ export type RideView = {
   cancellationFeePaise: number;
   totalPaise: number;
   platformFeePaise: number;
+  tipPaise: number;
   paymentMethod: PaymentMethod;
   paymentStatus: "pending" | "paid" | "failed" | "refunded" | "waived";
   isDemo: boolean;
+  requestedAt: string;
   arrivedAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
   /** Only ever present in the rider's own view (docs/DATABASE.md §10). */
   rideCode?: string;
+  /** Only in the Pilot's view: the rider's first name and Comet ID (docs/SECURITY.md §2). */
+  rider?: { firstName: string; cometId: string };
   pilot?: {
     name: string;
     cometId: string;
@@ -81,13 +87,22 @@ export async function toRideView(ride: RideWithPilot, forRider: boolean): Promis
     cancellationFeePaise: ride.cancellationFeePaise,
     totalPaise: ride.totalPaise,
     platformFeePaise: ride.platformFeePaise,
+    tipPaise: ride.tipPaise,
     paymentMethod: ride.paymentMethod,
     paymentStatus: ride.paymentStatus,
     isDemo: ride.isDemo,
+    requestedAt: ride.requestedAt.toISOString(),
     arrivedAt: ride.arrivedAt?.toISOString() ?? null,
     startedAt: ride.startedAt?.toISOString() ?? null,
     completedAt: ride.completedAt?.toISOString() ?? null,
-    ...(forRider ? { rideCode: ride.rideCode } : {}),
+    ...(forRider
+      ? { rideCode: ride.rideCode }
+      : {
+          rider: {
+            firstName: ride.rider.displayName.split(" ")[0] ?? "Rider",
+            cometId: ride.rider.cometId,
+          },
+        }),
     ...(ride.pilot && profile
       ? {
           pilot: {
@@ -216,33 +231,45 @@ export async function getRiderRide(riderId: string, rideId: string, now: Date = 
 }
 
 /**
- * Cancels before the trip starts. Cancellation fees (docs/PRD.md F5) come
- * with phase 7; until then cancelling is free.
+ * Cancels before the trip starts ("12 · Cancel ride"). Free while
+ * searching or within 3 minutes of booking; after that ₹25 goes to the
+ * Pilot, unless the reason is the Pilot's fault (lib/cancellation.ts). The
+ * fee comes from the wallet, and is waived if the wallet can't cover it.
  */
 export async function cancelRideAsRider(
   riderId: string,
   rideId: string,
-  reason: string,
+  reason: CancelReasonId | null,
   now = new Date(),
-) {
+): Promise<{ feePaise: number; charged: "paid" | "waived" | "none" }> {
   const ride = await findRideForParticipant(riderId, rideId);
   if (!ride || ride.riderId !== riderId)
     throw new AppError("NOT_FOUND", "That ride doesn't exist.");
-  if (ride.status !== "requested" && ride.status !== "accepted") {
+  if (ride.status !== "requested" && ride.status !== "accepted" && ride.status !== "arrived") {
     throw new AppError("CONFLICT", "This ride can't be cancelled now.");
   }
 
+  const fee = cancellationFee({ status: ride.status, requestedAt: ride.requestedAt, now, reason });
+  const label = CANCEL_REASONS.find((r) => r.id === reason)?.label ?? "Cancelled by rider";
   const ok = await transitionRide(ride.id, ride.status, {
     status: "cancelled",
     cancelledAt: now,
     cancelledBy: "rider",
-    cancelReason: reason.slice(0, 200),
+    cancelReason: label,
+    cancellationFeePaise: fee,
+    totalPaise: fee,
   });
   if (!ok) throw new AppError("CONFLICT", "Your ride changed just now. Please check its status.");
 
   const closed = await closeOtherOffers(ride.id, null, "expired");
   if (ride.pilotId) await setPilotAvailable(ride.pilotId, true);
-  await addRideEvent(ride.id, "ride.cancelled", { id: riderId, role: "rider" }, { reason });
+  await addRideEvent(
+    ride.id,
+    "ride.cancelled",
+    { id: riderId, role: "rider" },
+    { reason: label, feePaise: fee },
+  );
+  const outcome = await chargeCancellation(ride.id);
   await broadcast(
     { topic: topics.ride(ride.id), event: EVENTS.rideUpdated, payload: { status: "cancelled" } },
     ...closed.map((o) => ({
@@ -251,4 +278,9 @@ export async function cancelRideAsRider(
       payload: { offerId: o.id },
     })),
   );
+  if (outcome === "paid") await announceBalance(riderId);
+  return {
+    feePaise: fee,
+    charged: outcome === "paid" ? "paid" : outcome === "waived" ? "waived" : "none",
+  };
 }

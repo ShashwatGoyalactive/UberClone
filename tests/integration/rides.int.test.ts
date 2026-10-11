@@ -207,7 +207,7 @@ describe("rider rules", () => {
     const riderId = await newRider();
     const { rideId } = await book(riderId);
     await acceptOffer(pilot, (await listOpenOffers(pilot))[0]!.offerId);
-    await cancelRideAsRider(riderId, rideId, "Plans changed");
+    await cancelRideAsRider(riderId, rideId, "plans_changed");
     expect((await db.ride.findUniqueOrThrow({ where: { id: rideId } })).status).toBe("cancelled");
     expect(await getPilotActiveRide(pilot)).toBeNull();
   });
@@ -215,7 +215,7 @@ describe("rider rules", () => {
   it("another rider can't cancel your ride", async () => {
     await clearTheRoads();
     const { rideId } = await book(await newRider());
-    await expect(cancelRideAsRider(await newRider(), rideId, "nope")).rejects.toMatchObject({
+    await expect(cancelRideAsRider(await newRider(), rideId, null)).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });

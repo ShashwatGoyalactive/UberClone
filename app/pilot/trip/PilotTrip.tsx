@@ -98,9 +98,14 @@ export function PilotTrip({ initial }: { initial: RideView }) {
             {ride.status === "no_show" ? "Marked as no-show" : "Ride ended"}
           </h1>
         </div>
-        {ride.status === "no_show" && (
-          <p className="text-center text-muted-foreground">
-            You&apos;ll receive the {formatRupees(ride.cancellationFeePaise)} no-show fee.
+        {(ride.status === "no_show" || ride.status === "cancelled") && (
+          <p className="text-center text-muted-foreground" data-testid="cancel-outcome">
+            {ride.status === "cancelled" ? "The rider cancelled. " : ""}
+            {ride.cancellationFeePaise === 0
+              ? ""
+              : ride.paymentStatus === "paid"
+                ? `${formatRupees(ride.cancellationFeePaise)} from the rider is in your Pilot wallet.`
+                : `The ${formatRupees(ride.cancellationFeePaise)} fee was waived: the rider's wallet couldn't cover it.`}
           </p>
         )}
         <Button

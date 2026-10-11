@@ -3,6 +3,8 @@ import { z } from "zod";
 import { RIDE_TIERS } from "@/lib/fares";
 import { latLngSchema } from "@/lib/validation/places";
 import { PAYMENT_METHODS } from "@/lib/wallet";
+import { CANCEL_REASON_IDS } from "@/lib/cancellation";
+import { MAX_COMMENT, MAX_TIP } from "@/lib/ratings";
 
 /** Shared by forms and Server Actions for booking, offers and locations. */
 
@@ -16,7 +18,20 @@ export const rideIdSchema = z.object({ rideId: z.uuid() });
 
 export const cancelRideSchema = z.object({
   rideId: z.uuid(),
-  reason: z.string().trim().min(1).max(200).default("Cancelled by rider"),
+  reason: z.enum(CANCEL_REASON_IDS).nullable().default(null),
+});
+
+export const rateRideSchema = z.object({
+  rideId: z.uuid(),
+  stars: z.number().int().min(1).max(5),
+  tags: z.array(z.string().max(40)).max(8).default([]),
+  comment: z.string().max(MAX_COMMENT).nullable().default(null),
+  tipPaise: z.number().int().min(0).max(MAX_TIP).default(0),
+});
+
+export const listRidesSchema = z.object({
+  tab: z.enum(["past", "upcoming", "cancelled"]).default("past"),
+  cursor: z.uuid().nullable().default(null),
 });
 
 export const offerIdSchema = z.object({ offerId: z.uuid() });

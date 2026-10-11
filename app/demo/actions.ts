@@ -11,7 +11,7 @@ import { demoRoleSchema } from "@/lib/validation/auth";
  * anonymously (see lib/supabase/browser.ts for why that happens in the
  * browser). Creates the demo account for this session and says where to go.
  */
-export async function startDemoAction(input: { role: unknown }) {
+export async function startDemoAction(input: { role: unknown; simulatedPilot?: unknown }) {
   return runAction("demo.start", async () => {
     const parsed = demoRoleSchema.safeParse(input?.role);
     if (!parsed.success) throw new AppError("VALIDATION", "Pick rider or Pilot to continue.");
@@ -20,7 +20,8 @@ export async function startDemoAction(input: { role: unknown }) {
     if (!identity)
       throw new AppError("UNAUTHENTICATED", "Your demo session didn't start. Try again.");
 
-    await setUpDemo(identity, parsed.data);
+    const simulatedPilot = input?.simulatedPilot !== false;
+    await setUpDemo(identity, parsed.data, undefined, { simulatedPilot });
     return { redirectTo: parsed.data === "rider" ? "/ride" : "/pilot" };
   });
 }

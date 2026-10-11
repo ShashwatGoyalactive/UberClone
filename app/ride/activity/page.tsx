@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 
 import { AppFrame } from "@/components/AppFrame";
-import { ComingSoon } from "@/components/ComingSoon";
 import { RiderTabBar } from "@/components/RiderTabBar";
 import { requireUser } from "@/lib/auth/session";
+import { listRides } from "@/lib/services/history";
 
-export const metadata: Metadata = { title: "Activity" };
+import { RideHistory } from "./RideHistory";
 
-export default async function Page() {
-  await requireUser("/ride/activity");
+export const metadata: Metadata = { title: "Your rides" };
+
+/** "10 · Ride history": Past, Upcoming and Cancelled. */
+export default async function ActivityPage() {
+  const user = await requireUser("/ride/activity");
   return (
     <AppFrame>
       <div className="flex min-h-dvh flex-col">
-        <ComingSoon title="Your rides" phase="ride history (phase 7)" />
+        <RideHistory initial={await listRides(user.id, "past", null)} />
         <RiderTabBar active="/ride/activity" />
       </div>
     </AppFrame>

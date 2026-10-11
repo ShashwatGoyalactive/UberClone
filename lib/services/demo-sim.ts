@@ -22,7 +22,8 @@ import {
   findRideForParticipant,
   transitionRide,
 } from "@/lib/repositories/rides";
-import { findSimulatedPilotFor } from "@/lib/repositories/users";
+import { findSimulatedPilotFor, wantsSimulatedPilot } from "@/lib/repositories/users";
+import { refreshRequestedRide } from "@/lib/services/matching";
 import { settleRide } from "@/lib/repositories/wallet";
 import { ensureSimulatedPilot } from "@/lib/services/accounts";
 import { chargeOnCompletion } from "@/lib/services/payments";
@@ -56,6 +57,13 @@ export async function tickDemoRide(
   const step = simStep(elapsedS);
   const botId = (await findSimulatedPilotFor(riderId)) ?? (await ensureSimulatedPilot(riderId));
   const at = (offsetS: number) => new Date(ride!.requestedAt.getTime() + offsetS * 1000);
+
+  // With the simulated Pilot switched off, this is an ordinary ride:
+  // offer waves advance and it expires like any other.
+  if (ride.status === "requested" && !(await wantsSimulatedPilot(riderId))) {
+    await refreshRequestedRide(ride, now);
+    return toRideView((await findRideForParticipant(riderId, rideId))!, true);
+  }
 
   // The bot accepts only if the ride is still waiting.
   if (ride.status === "requested" && reached(step.phase, "approaching")) {

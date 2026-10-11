@@ -30,7 +30,7 @@ const ROLES: { id: Role; title: string; sub: string; initials: string; tile: str
 
 const HOW: Record<Role, string[]> = {
   rider: [
-    "Book any ride — a simulated Pilot accepts in a few seconds.",
+    "Book any ride — with Simulated Pilot on, a bot Pilot accepts in a few seconds.",
     "Watch the car drive the route live, chat, or try SOS safely.",
     "Open the Pilot demo in another tab to see both sides at once.",
   ],
@@ -44,6 +44,7 @@ const HOW: Record<Role, string[]> = {
 export function DemoPicker({ initialRole }: { initialRole: Role }) {
   const router = useRouter();
   const [role, setRole] = useState<Role>(initialRole);
+  const [simulatedPilot, setSimulatedPilot] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -63,7 +64,7 @@ export function DemoPicker({ initialRole }: { initialRole: Role }) {
           return;
         }
       }
-      const result = await startDemoAction({ role });
+      const result = await startDemoAction({ role, simulatedPilot });
       if (!result.ok) {
         setError(result.message);
         return;
@@ -129,6 +130,29 @@ export function DemoPicker({ initialRole }: { initialRole: Role }) {
           ))}
         </ol>
       </section>
+
+      {role === "rider" && (
+        <label className="flex cursor-pointer items-center gap-3.5 rounded-lg bg-card p-4">
+          <span className="flex flex-1 flex-col gap-0.5">
+            <span className="font-bold">Simulated Pilot</span>
+            <span className="text-sm leading-snug text-muted-foreground">
+              A bot Pilot accepts if no real one does. Turn it off to ride with the Pilot demo open
+              in another tab.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={simulatedPilot}
+            onChange={(e) => setSimulatedPilot(e.target.checked)}
+            className="peer sr-only"
+          />
+          <span
+            aria-hidden
+            className="relative h-7 w-12 shrink-0 rounded-full bg-border transition-colors peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring after:absolute after:top-1 after:left-1 after:size-5 after:rounded-full after:bg-card after:transition-transform peer-checked:after:translate-x-5"
+          />
+        </label>
+      )}
 
       <div className="mt-auto flex flex-col gap-2">
         {error && (

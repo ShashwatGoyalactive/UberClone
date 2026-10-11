@@ -14,6 +14,7 @@ import { ACTIVE_STATUSES } from "@/lib/ride-state";
 const active = { in: [...ACTIVE_STATUSES] as RideStatus[] };
 
 export const rideWithPilot = {
+  rider: { select: { displayName: true, cometId: true } },
   pilot: {
     select: {
       id: true,
@@ -262,4 +263,43 @@ export async function setUnpaidRideMethod(
     data: { paymentMethod: method, paymentStatus: "pending" },
   });
   return count === 1;
+}
+
+/** A page of the rider's rides with these statuses, newest first. */
+export async function listRiderRides(
+  riderId: string,
+  statuses: RideStatus[],
+  cursor: string | null,
+  take: number,
+): Promise<RideWithPilot[]> {
+  return db.ride.findMany({
+    where: { riderId, status: { in: statuses } },
+    orderBy: [{ requestedAt: "desc" }, { id: "desc" }],
+    take,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: rideWithPilot,
+  });
+}
+
+/** The rating this user gave on this ride, if any. */
+export async function findRatingBy(raterId: string, rideId: string) {
+  return db.rating.findUnique({
+    where: { rideId_raterId: { rideId, raterId } },
+    select: { stars: true, tags: true, comment: true },
+  });
+}
+
+/** The rider's latest finished, paid ride from the last day that they haven't rated. */
+export async function findUnratedRecentRide(riderId: string, since: Date) {
+  return db.ride.findFirst({
+    where: {
+      riderId,
+      status: "completed",
+      paymentStatus: "paid",
+      completedAt: { gte: since },
+      ratings: { none: { raterId: riderId } },
+    },
+    orderBy: { completedAt: "desc" },
+    select: { id: true, dropAddress: true },
+  });
 }

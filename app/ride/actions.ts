@@ -11,7 +11,15 @@ import {
   getRiderRide,
 } from "@/lib/services/rides";
 import { quoteRequestSchema, searchPlacesSchema } from "@/lib/validation/places";
-import { bookRideSchema, cancelRideSchema, rideIdSchema } from "@/lib/validation/rides";
+import {
+  bookRideSchema,
+  cancelRideSchema,
+  listRidesSchema,
+  rateRideSchema,
+  rideIdSchema,
+} from "@/lib/validation/rides";
+import { listRides } from "@/lib/services/history";
+import { rateRide } from "@/lib/services/ratings";
 
 /** Rider actions (docs/API.md "Places and quotes", "Rides (rider)"). */
 
@@ -63,8 +71,7 @@ export async function cancelRideAction(input: unknown) {
     const user = await requireRider();
     const parsed = cancelRideSchema.safeParse(input);
     if (!parsed.success) throw new AppError("VALIDATION", "That ride can't be cancelled.");
-    await cancelRideAsRider(user.id, parsed.data.rideId, parsed.data.reason);
-    return { cancelled: true };
+    return cancelRideAsRider(user.id, parsed.data.rideId, parsed.data.reason);
   });
 }
 
@@ -75,5 +82,26 @@ export async function getRideAction(input: unknown) {
     const parsed = rideIdSchema.safeParse(input);
     if (!parsed.success) throw new AppError("NOT_FOUND", "That ride doesn't exist.");
     return getRiderRide(user.id, parsed.data.rideId);
+  });
+}
+
+/** Rates the other side of a finished ride (either side may call it). */
+export async function rateRideAction(input: unknown) {
+  return runAction("ride.rate", async () => {
+    const user = await requireRider();
+    const parsed = rateRideSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("VALIDATION", "Choose 1 to 5 stars.");
+    const { rideId, ...rating } = parsed.data;
+    await rateRide(user.id, rideId, rating);
+    return { rated: true };
+  });
+}
+
+export async function listRidesAction(input: unknown) {
+  return runAction("ride.list", async () => {
+    const user = await requireRider();
+    const parsed = listRidesSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("VALIDATION", "That list isn't available.");
+    return listRides(user.id, parsed.data.tab, parsed.data.cursor);
   });
 }

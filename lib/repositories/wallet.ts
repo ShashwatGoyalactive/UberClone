@@ -121,3 +121,29 @@ export async function markPaymentFailed(orderId: string, reason: string): Promis
     data: { status: "failed", failureReason: reason.slice(0, 200) },
   });
 }
+
+export type RateOutcome = "ok" | "duplicate" | "insufficient" | "not_completed" | "not_found";
+
+/** A rating, the ratee's average and any tip, in one statement (comet_rate_ride). */
+export async function rateRideOnce(input: {
+  rideId: string;
+  raterId: string;
+  stars: number;
+  tags: string[];
+  comment: string | null;
+  tipPaise: number;
+}): Promise<RateOutcome> {
+  const rows = await db.$queryRaw<{ outcome: RateOutcome }[]>`
+    SELECT comet_rate_ride(${input.rideId}::uuid, ${input.raterId}::uuid, ${input.stars}::integer,
+      ${input.tags}::text[], ${input.comment}, ${input.tipPaise}::integer) AS outcome`;
+  return rows[0]!.outcome;
+}
+
+export type CancellationChargeOutcome = "paid" | "waived" | "none" | "already";
+
+/** Charges a cancelled ride's fee once, rider to Pilot (comet_charge_cancellation). */
+export async function chargeCancellation(rideId: string): Promise<CancellationChargeOutcome> {
+  const rows = await db.$queryRaw<{ outcome: CancellationChargeOutcome }[]>`
+    SELECT comet_charge_cancellation(${rideId}::uuid) AS outcome`;
+  return rows[0]!.outcome;
+}

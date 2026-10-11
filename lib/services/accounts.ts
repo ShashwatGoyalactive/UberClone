@@ -107,6 +107,7 @@ export async function setUpDemo(
   identity: AuthIdentity,
   role: DemoRole,
   random: () => number = secureRandom,
+  options: { simulatedPilot?: boolean } = {},
 ): Promise<User> {
   if (!identity.isAnonymous) {
     throw new AppError(
@@ -130,7 +131,7 @@ export async function setUpDemo(
   }
 
   if (role === "rider") {
-    await ensureRiderProfile(user.id);
+    await ensureRiderProfile(user.id, { simulatedPilot: options.simulatedPilot ?? true });
     await ensureSimulatedPilot(user.id, random);
     await grantDemoWallet(user.id);
   } else {

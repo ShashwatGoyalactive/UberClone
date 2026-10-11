@@ -7,6 +7,7 @@ import { VehicleIcon } from "@/components/icons/Vehicle";
 import { RiderTabBar } from "@/components/RiderTabBar";
 import { requireUser } from "@/lib/auth/session";
 import { RIDE_TIERS, TIER_RATES } from "@/lib/fares";
+import { getRatingPrompt } from "@/lib/services/history";
 import { getRiderCurrentRide } from "@/lib/services/rides";
 
 import { HomeMap } from "./HomeMap";
@@ -32,6 +33,7 @@ export default async function RideHomePage() {
   const user = await requireUser("/ride");
   const firstName = user.displayName.split(" ")[0];
   const activeRide = await getRiderCurrentRide(user.id);
+  const toRate = activeRide ? null : await getRatingPrompt(user.id);
 
   return (
     <AppFrame>
@@ -71,6 +73,16 @@ export default async function RideHomePage() {
               </Link>
             )}
 
+            {toRate && (
+              <Link
+                href={`/ride/activity/${toRate.id}`}
+                className="flex items-center justify-between gap-3 rounded-lg bg-info-soft px-4 py-3.5 font-semibold text-info"
+              >
+                <span className="truncate">Rate your ride to {toRate.dropAddress}</span>
+                <span className="text-sm">★ Rate</span>
+              </Link>
+            )}
+
             <Link
               href="/ride/plan"
               className="flex h-[58px] items-center gap-3 rounded-lg bg-muted px-4 text-lg font-semibold"
@@ -96,8 +108,8 @@ export default async function RideHomePage() {
             <div className="flex items-center gap-3.5 rounded-lg bg-ink px-4 py-3.5 text-on-ink">
               <Gift className="size-6 shrink-0" aria-hidden />
               <p className="text-sm leading-snug">
-                <b>Your Comet ID is {user.cometId}</b> — share it with friends for referral rewards
-                once wallets launch.
+                <b>Your Comet ID is {user.cometId}</b> — it&apos;s yours for good. Pilots see it on
+                every ride, and referral rewards with it are coming soon.
               </p>
             </div>
           </div>

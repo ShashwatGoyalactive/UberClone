@@ -28,8 +28,21 @@ async function at(browser: Browser, spot: { latitude: number; longitude: number 
 
 type Pay = "Comet Wallet" | "UPI" | "Card" | "Cash";
 
-async function bookFromCurrentLocation(page: import("@playwright/test").Page, pay?: Pay) {
+/**
+ * Books Comet Go to MG Road as a fresh demo rider. Tests with a real
+ * Pilot switch the simulated one off, so the bot can't win the race to
+ * accept on a slow machine.
+ */
+async function bookFromCurrentLocation(
+  page: import("@playwright/test").Page,
+  pay?: Pay,
+  { simulatedPilot = true } = {},
+) {
   await page.goto("/demo?role=rider");
+  if (!simulatedPilot) {
+    await page.getByText("Simulated Pilot", { exact: true }).click();
+    await expect(page.getByRole("switch", { name: /Simulated Pilot/ })).not.toBeChecked();
+  }
   await page.getByRole("button", { name: "Start riding" }).click();
   await expect(page).toHaveURL(/\/ride$/);
   await page.getByRole("link", { name: "Where to?" }).click();
@@ -74,15 +87,34 @@ test("a demo rider completes a whole ride with the simulated Pilot", async ({
   expect(total).toMatch(/^₹[\d,]+$/);
   await expect(page.getByText("Paid · Comet Wallet")).toBeVisible();
 
+  // Rate 5 stars with a ₹20 tip (docs/TESTING.md §5).
+  await page.getByRole("radio", { name: "5 stars" }).click();
+  await page.getByRole("button", { name: "Smooth driving" }).click();
+  await page.getByRole("radio", { name: "₹20" }).click();
+  await page.getByRole("button", { name: "Submit & tip ₹20" }).click();
+  await expect(page.getByText("Thanks — you rated Rohan ★★★★★")).toBeVisible();
+
   await page.getByRole("link", { name: "Done" }).click();
   await expect(page).toHaveURL(/\/ride$/);
   await expect(page.getByText("Your ride is in progress")).toHaveCount(0);
 
-  // Charged exactly the receipt total, once.
+  // Charged exactly the receipt total plus the tip, once.
   const paise = Number(total!.replace(/[^\d]/g, "")) * 100;
   await page.getByRole("link", { name: "Wallet" }).click();
   await expect(page.getByTestId("wallet-balance")).toHaveText(
-    `₹${((124_000 - paise) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+    `₹${((124_000 - paise - 2_000) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+  );
+
+  // The ride is in history as completed, with a receipt.
+  await page.getByRole("link", { name: "Activity" }).click();
+  await expect(page.getByRole("heading", { name: "Your rides" })).toBeVisible();
+  const row = page.getByRole("list", { name: "Rides" }).getByRole("link").first();
+  await expect(row).toContainText("Completed · Comet Wallet");
+  await row.click();
+  await expect(page.getByTestId("my-rating")).toHaveText("You rated ★★★★★");
+  await expect(page.getByText("Tip for Rohan")).toBeVisible();
+  await expect(page.getByTestId("receipt-total")).toHaveText(
+    `₹${((paise + 2_000) / 100).toLocaleString("en-IN")}`,
   );
   await context.close();
 });
@@ -100,10 +132,9 @@ test("a real Pilot arrives, starts with the rider's code, and ends the trip", as
   await pilot.page.getByRole("button", { name: "Go online" }).click();
   await expect(pilot.page.getByRole("button", { name: "You're online" })).toBeVisible();
 
-  await bookFromCurrentLocation(rider.page, "Cash");
-  // Accept before the rider's simulated Pilot steps in (it waits 6 seconds).
+  await bookFromCurrentLocation(rider.page, "Cash", { simulatedPilot: false });
   const request = pilot.page.getByRole("article", { name: /Ride request/ });
-  await expect(request).toBeVisible({ timeout: 5_000 });
+  await expect(request).toBeVisible({ timeout: 10_000 });
   await request.getByRole("button", { name: "Accept" }).click();
   await expect(pilot.page.getByRole("heading", { name: "Head to pickup" })).toBeVisible();
 
@@ -144,6 +175,9 @@ test("a real Pilot arrives, starts with the rider's code, and ends the trip", as
   await pilot.page.getByRole("button", { name: "Cash received" }).click();
   await expect(pilot.page.getByRole("heading", { name: "Trip complete" })).toBeVisible();
   await expect(pilot.page.getByText("Paid · Cash")).toBeVisible();
+  await pilot.page.getByRole("radio", { name: "4 stars" }).click();
+  await pilot.page.getByRole("button", { name: "Submit rating" }).click();
+  await expect(pilot.page.getByText(/you rated Aarav ★★★★☆/)).toBeVisible();
 
   await expect(rider.page.getByRole("heading", { name: "You've arrived" })).toBeVisible({
     timeout: 10_000,
@@ -178,9 +212,9 @@ test("a rider pays a finished ride by UPI through checkout", async ({ browser },
   await pilot.page.getByRole("button", { name: "Go online" }).click();
   await expect(pilot.page.getByRole("button", { name: "You're online" })).toBeVisible();
 
-  await bookFromCurrentLocation(rider.page, "UPI");
+  await bookFromCurrentLocation(rider.page, "UPI", { simulatedPilot: false });
   const request = pilot.page.getByRole("article", { name: /Ride request/ });
-  await expect(request).toBeVisible({ timeout: 5_000 });
+  await expect(request).toBeVisible({ timeout: 10_000 });
   await request.getByRole("button", { name: "Accept" }).click();
   const code = (await rider.page.getByTestId("ride-code").textContent({ timeout: 10_000 }))!.trim();
   await pilot.page.getByRole("button", { name: "I've arrived" }).click();

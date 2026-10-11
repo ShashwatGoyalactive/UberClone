@@ -36,8 +36,10 @@ test("a rider books, a nearby Pilot accepts, and the rider sees their Pilot", as
   await pilot.page.getByRole("button", { name: "Go online" }).click();
   await expect(pilot.page.getByRole("button", { name: "You're online" })).toBeVisible();
 
-  // Rider books Comet Go.
+  // Rider books Comet Go, with the simulated Pilot off so only the real one can accept.
   await rider.page.goto("/demo?role=rider");
+  await rider.page.getByText("Simulated Pilot", { exact: true }).click();
+  await expect(rider.page.getByRole("switch", { name: /Simulated Pilot/ })).not.toBeChecked();
   await rider.page.getByRole("button", { name: "Start riding" }).click();
   await expect(rider.page).toHaveURL(/\/ride$/);
   await rider.page.getByRole("link", { name: "Where to?" }).click();
@@ -65,6 +67,18 @@ test("a rider books, a nearby Pilot accepts, and the rider sees their Pilot", as
   await expect(rider.page.getByTestId("pilot-name")).toHaveText("Rohan Kumar");
   await expect(rider.page.getByText("KA 05 MX 2841")).toBeVisible();
   await expect(rider.page.getByTestId("ride-code")).toHaveText(/^\d{4}$/);
+
+  // Cancelling with a Pilot on the way asks first; within 3 minutes it's free.
+  await rider.page.getByRole("button", { name: "Cancel ride" }).click();
+  const sheet = rider.page.getByRole("dialog", { name: "Cancel this ride?" });
+  await expect(sheet.getByText("Cancelling now is free.")).toBeVisible();
+  await sheet.getByRole("button", { name: "Keep my ride" }).click();
+  await expect(sheet).toHaveCount(0);
+  await rider.page.getByRole("button", { name: "Cancel ride" }).click();
+  await sheet.getByRole("radio", { name: "My plans changed" }).click();
+  await sheet.getByRole("button", { name: "Cancel · free" }).click();
+  await expect(rider.page.getByText("Your ride was cancelled. You weren't charged.")).toBeVisible();
+  await expect(pilot.page.getByText("The rider cancelled.")).toBeVisible({ timeout: 10_000 });
 
   await pilot.context.close();
   await rider.context.close();

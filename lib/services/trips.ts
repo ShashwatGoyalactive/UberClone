@@ -13,7 +13,9 @@ import {
   recordWrongRideCode,
   transitionRide,
 } from "@/lib/repositories/rides";
+import { chargeCancellation } from "@/lib/repositories/wallet";
 import { chargeOnCompletion } from "@/lib/services/payments";
+import { announceBalance } from "@/lib/services/wallet";
 import { toRideView } from "@/lib/services/rides";
 import {
   MAX_RIDE_CODE_ATTEMPTS,
@@ -140,5 +142,7 @@ export async function cancelAsNoShow(pilotId: string, rideId: string, now: Date 
   if (!ok) throw new AppError("CONFLICT", "This ride changed just now.");
   await setPilotAvailable(pilotId, true);
   await addRideEvent(ride.id, "ride.no_show", { id: pilotId, role: "pilot" });
+  // The ₹40 goes from the rider's wallet to the Pilot (waived if it can't cover it).
+  if ((await chargeCancellation(ride.id)) === "paid") await announceBalance(ride.riderId);
   await announce(ride.id, "no_show");
 }

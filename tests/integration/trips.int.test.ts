@@ -186,3 +186,15 @@ describe("the demo's simulated Pilot", () => {
     await expect(tickDemoRide(other, rideId)).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
+
+describe("the Simulated Pilot switch", () => {
+  it("keeps the bot out when the rider switched it off", async () => {
+    await db.$executeRaw`UPDATE pilot_locations SET is_online = false`;
+    const riderId = (await setUpDemo(anon(), "rider", undefined, { simulatedPilot: false })).id;
+    const rideId = await bookFor(riderId);
+    const { requestedAt } = await db.ride.findUniqueOrThrow({ where: { id: rideId } });
+    const view = await tickDemoRide(riderId, rideId, at(requestedAt, SIM.ACCEPT_AT_S + 5));
+    expect(view.status).toBe("requested");
+    expect(view.pilot).toBeUndefined();
+  });
+});
