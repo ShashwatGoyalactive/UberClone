@@ -21,6 +21,7 @@ import {
   findOfferForPilot,
   findOpenOffersForPilot,
   findRideForParticipant,
+  findUnpaidRideForPilot,
   setOfferStatus,
 } from "@/lib/repositories/rides";
 import { refreshRequestedRide } from "@/lib/services/matching";
@@ -170,6 +171,18 @@ export async function getPilotActiveRide(pilotId: string) {
   if (!ride) return null;
   const full = await findRideForParticipant(pilotId, ride.id);
   return full ? toRideView(full, false) : null;
+}
+
+/**
+ * The trip screen's ride: the active one, or a finished cash ride whose
+ * cash the Pilot hasn't confirmed yet. Rides paid online don't hold the
+ * Pilot here — the rider pays in their own time.
+ */
+export async function getPilotCurrentRide(pilotId: string) {
+  const active = await getPilotActiveRide(pilotId);
+  if (active) return active;
+  const cash = await findUnpaidRideForPilot(pilotId, "cash");
+  return cash ? toRideView(cash, false) : null;
 }
 
 export async function getPilotStatus(pilotId: string) {

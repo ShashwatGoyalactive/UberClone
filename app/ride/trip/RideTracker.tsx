@@ -11,12 +11,15 @@ import { formatRupees } from "@/lib/money";
 import { topics } from "@/lib/realtime/topics";
 import { useLive } from "@/lib/realtime/use-live";
 import type { RideView } from "@/lib/services/rides";
+import { PAYMENT_METHOD_LABELS } from "@/lib/wallet";
 
 import { cancelRideAction, getRideAction } from "../actions";
+import { TripPayment } from "./TripPayment";
 
 /**
  * The rider's live trip: "5 · Finding Pilot" → "6 · Pilot on the way" →
- * on trip → "7 · Trip done". Kept in sync by useLive (Realtime + polling).
+ * on trip → paying ("7b") → "7 · Trip done". Kept in sync by useLive
+ * (Realtime + polling) until the ride is over and paid.
  * A demo ride polls /api/demo/tick instead, which also drives its
  * simulated Pilot.
  */
@@ -24,7 +27,11 @@ export function RideTracker({ initial }: { initial: RideView }) {
   const [ride, setRide] = useState<RideView>(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const finished = ["completed", "cancelled", "expired", "no_show"].includes(ride.status);
+  const ended = ["completed", "cancelled", "expired", "no_show"].includes(ride.status);
+  const awaitingPayment =
+    ride.status === "completed" &&
+    (ride.paymentStatus === "pending" || ride.paymentStatus === "failed");
+  const finished = ended && !awaitingPayment;
 
   async function refresh() {
     if (finished) return;
@@ -55,8 +62,9 @@ export function RideTracker({ initial }: { initial: RideView }) {
     });
   }
 
+  if (awaitingPayment) return <TripPayment ride={ride} onChange={refresh} />;
   if (ride.status === "completed") return <TripDone ride={ride} />;
-  if (finished) return <Ended status={ride.status} />;
+  if (ended) return <Ended status={ride.status} />;
 
   const waiting = ride.status === "requested";
   const minutes = Math.max(1, Math.round(ride.durationS / 60));
@@ -143,7 +151,8 @@ export function RideTracker({ initial }: { initial: RideView }) {
         <div className="flex items-center justify-between gap-3 rounded-lg bg-muted px-4 py-3 text-sm">
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="text-xs text-muted-foreground">
-              {TIER_RATES[ride.tier].label} · {minutes} min · cash
+              {TIER_RATES[ride.tier].label} · {minutes} min ·{" "}
+              {PAYMENT_METHOD_LABELS[ride.paymentMethod]}
             </span>
             <span className="truncate font-semibold">{ride.drop.address}</span>
           </span>
@@ -214,7 +223,7 @@ function PilotCard({ pilot }: { pilot: NonNullable<RideView["pilot"]> }) {
   );
 }
 
-/** "7 · Trip done": the fare breakdown. Ratings and tips arrive in phase 7. */
+/** "7 · Trip done": paid, with the fare breakdown. Ratings and tips arrive in phase 7. */
 function TripDone({ ride }: { ride: RideView }) {
   return (
     <main className="flex min-h-dvh flex-col gap-5 px-5 pt-8 pb-6">
@@ -241,18 +250,16 @@ function TripDone({ ride }: { ride: RideView }) {
         )}
         <div className="h-px bg-border" />
         <div className="flex items-center justify-between">
-          <span className="font-bold">Pay in cash</span>
+          <span className="font-bold">Paid · {PAYMENT_METHOD_LABELS[ride.paymentMethod]}</span>
           <span className="font-heading text-xl font-bold" data-testid="trip-total">
             {formatRupees(ride.totalPaise)}
           </span>
         </div>
       </section>
 
-      {ride.pilot && (
-        <p className="text-center text-sm text-muted-foreground">
-          Please pay {ride.pilot.name} directly. Rating your Pilot opens in a later build phase.
-        </p>
-      )}
+      <p className="text-center text-sm text-muted-foreground">
+        Rating your Pilot opens in a later build phase.
+      </p>
 
       <Link
         href="/ride"

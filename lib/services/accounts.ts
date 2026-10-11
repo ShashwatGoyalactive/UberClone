@@ -17,6 +17,7 @@ import {
   insertUser,
   setDemoRole,
 } from "@/lib/repositories/users";
+import { grantDemoWallet } from "@/lib/services/wallet";
 
 /**
  * Accounts: the bridge between a Supabase auth user and Comet's own
@@ -99,8 +100,8 @@ export async function ensureAccount(
  * a role again, or the other role, on the same session reuses the account
  * and adds whatever profile is missing.
  *
- * Later phases seed the wallet, saved places, history and the simulated
- * Pilot here (docs/PRD.md F1).
+ * Riders get the ₹1,240 starting balance and their simulated Pilot. Later
+ * phases add saved places and history (docs/PRD.md F1).
  */
 export async function setUpDemo(
   identity: AuthIdentity,
@@ -131,6 +132,7 @@ export async function setUpDemo(
   if (role === "rider") {
     await ensureRiderProfile(user.id);
     await ensureSimulatedPilot(user.id, random);
+    await grantDemoWallet(user.id);
   } else {
     await ensureApprovedDemoPilot(user.id, DEMO_VEHICLE);
   }

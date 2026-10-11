@@ -13,6 +13,7 @@ import {
   recordWrongRideCode,
   transitionRide,
 } from "@/lib/repositories/rides";
+import { chargeOnCompletion } from "@/lib/services/payments";
 import { toRideView } from "@/lib/services/rides";
 import {
   MAX_RIDE_CODE_ATTEMPTS,
@@ -116,6 +117,7 @@ export async function endTrip(pilotId: string, rideId: string, now: Date = new D
   await setPilotAvailable(pilotId, true);
   await addRideEvent(ride.id, "ride.completed", { id: pilotId, role: "pilot" });
   await announce(ride.id, "completed");
+  await chargeOnCompletion(ride);
 }
 
 /** After 5 minutes of waiting the Pilot may leave; the rider owes ₹40. */

@@ -1,6 +1,14 @@
 import "server-only";
 
-import { SIM, SIM_VEHICLES, simPosition, simStep, type SimPhase } from "@/lib/demo-sim";
+import {
+  SIM,
+  SIM_CASH_CONFIRM_S,
+  SIM_TOTAL_S,
+  SIM_VEHICLES,
+  simPosition,
+  simStep,
+  type SimPhase,
+} from "@/lib/demo-sim";
 import { AppError } from "@/lib/errors";
 import type { RideTier } from "@/lib/fares";
 import { db } from "@/lib/db";
@@ -15,7 +23,9 @@ import {
   transitionRide,
 } from "@/lib/repositories/rides";
 import { findSimulatedPilotFor } from "@/lib/repositories/users";
+import { settleRide } from "@/lib/repositories/wallet";
 import { ensureSimulatedPilot } from "@/lib/services/accounts";
+import { chargeOnCompletion } from "@/lib/services/payments";
 import { toRideView, type RideView } from "@/lib/services/rides";
 
 /**
@@ -95,13 +105,24 @@ export async function tickDemoRide(
       ride.status = "in_progress";
     }
     if (ride.status === "in_progress" && reached(step.phase, "done")) {
-      await transitionRide(ride.id, "in_progress", { status: "completed", completedAt: now });
-      await addRideEvent(
-        ride.id,
-        "ride.completed",
-        { id: botId, role: "pilot" },
-        { simulated: true },
-      );
+      if (await transitionRide(ride.id, "in_progress", { status: "completed", completedAt: now })) {
+        await addRideEvent(
+          ride.id,
+          "ride.completed",
+          { id: botId, role: "pilot" },
+          { simulated: true },
+        );
+        await chargeOnCompletion(ride);
+      }
+      ride.status = "completed";
+    }
+    // The bot collects cash like a real Pilot would: the exact fare.
+    if (
+      ride.status === "completed" &&
+      ride.paymentMethod === "cash" &&
+      elapsedS >= SIM_TOTAL_S + SIM_CASH_CONFIRM_S
+    ) {
+      await settleRide(ride.id, "cash");
     }
 
     const { point, headingDeg } = simPosition(

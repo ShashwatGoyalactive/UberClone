@@ -7,6 +7,7 @@ import { LiveMap } from "@/components/map/LiveMap";
 import { requireUser } from "@/lib/auth/session";
 import { AppError } from "@/lib/errors";
 import { quoteFare, type QuoteView } from "@/lib/services/quotes";
+import { getBalance } from "@/lib/services/wallet";
 import { parseTripParams, tripSearchParams } from "@/lib/trip-params";
 
 import { RideOptions } from "./RideOptions";
@@ -27,6 +28,7 @@ export default async function ChoosePage({ searchParams }: PageProps<"/ride/choo
     trip ? `/ride/choose?${tripSearchParams(trip.pickup, trip.drop)}` : "/ride/plan",
   );
 
+  const balancePaise = await getBalance(user.id);
   let quote: QuoteView | null = null;
   let problem: string | null = null;
   if (!trip) {
@@ -80,7 +82,12 @@ export default async function ChoosePage({ searchParams }: PageProps<"/ride/choo
                   Live routing is unavailable, so distance is estimated. Prices may change slightly.
                 </p>
               )}
-              <RideOptions quoteId={quote.quoteId} prices={quote.prices} />
+              <RideOptions
+                quoteId={quote.quoteId}
+                prices={quote.prices}
+                balancePaise={balancePaise}
+                returnPath={`/ride/choose?${tripSearchParams(trip.pickup, trip.drop)}`}
+              />
             </>
           ) : (
             <div className="flex flex-col gap-4 py-2">

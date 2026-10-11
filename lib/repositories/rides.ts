@@ -61,6 +61,32 @@ export async function findActiveRideForRider(riderId: string): Promise<RideWithP
   return db.ride.findFirst({ where: { riderId, status: active }, include: rideWithPilot });
 }
 
+const unpaid = {
+  status: "completed" as const,
+  paymentStatus: { in: ["pending", "failed"] as ("pending" | "failed")[] },
+};
+
+/** The rider's most recent finished ride that still needs paying. */
+export async function findUnpaidRideForRider(riderId: string): Promise<RideWithPilot | null> {
+  return db.ride.findFirst({
+    where: { riderId, ...unpaid },
+    orderBy: { completedAt: "desc" },
+    include: rideWithPilot,
+  });
+}
+
+/** The Pilot's most recent finished ride still waiting for payment. */
+export async function findUnpaidRideForPilot(
+  pilotId: string,
+  method?: "cash",
+): Promise<RideWithPilot | null> {
+  return db.ride.findFirst({
+    where: { pilotId, ...unpaid, ...(method ? { paymentMethod: method } : {}) },
+    orderBy: { completedAt: "desc" },
+    include: rideWithPilot,
+  });
+}
+
 export async function findActiveRideForPilot(pilotId: string): Promise<Ride | null> {
   return db.ride.findFirst({ where: { pilotId, status: active } });
 }
@@ -221,4 +247,19 @@ export async function recordWrongRideCode(rideId: string): Promise<number> {
     select: { rideCodeAttempts: true },
   });
   return updated.rideCodeAttempts;
+}
+
+/**
+ * Changes how a finished ride will be paid, only while it's unpaid.
+ * Returns false if it was paid (or changed) in the meantime.
+ */
+export async function setUnpaidRideMethod(
+  rideId: string,
+  method: "upi" | "card" | "cash",
+): Promise<boolean> {
+  const { count } = await db.ride.updateMany({
+    where: { id: rideId, status: "completed", paymentStatus: { in: ["pending", "failed"] } },
+    data: { paymentMethod: method, paymentStatus: "pending" },
+  });
+  return count === 1;
 }

@@ -67,6 +67,9 @@ model User {
   ridesAsRider  Ride[]         @relation("RideRider")
   ridesAsPilot  Ride[]         @relation("RidePilot")
   rideOffers    RideOffer[]
+  walletEntries WalletEntry[]
+  payments      Payment[]
+  payouts       Payout[]
 
   @@index([isDemo, createdAt], map: "users_demo_created_idx")
   @@map("users")
@@ -291,6 +294,8 @@ model Ride {
   waitingFeePaise      Int           @default(0) @map("waiting_fee_paise")
   cancellationFeePaise Int           @default(0) @map("cancellation_fee_paise")
   totalPaise           Int           @map("total_paise")
+  /// Comet's 15% of the fare, fixed at booking (splitFare in lib/fares.ts).
+  platformFeePaise     Int           @default(0) @map("platform_fee_paise")
   paymentMethod        PaymentMethod @map("payment_method")
   paymentStatus        PaymentStatus @default(pending) @map("payment_status")
   /// The 4-digit code the rider gives the Pilot to start the trip. Only
@@ -312,10 +317,12 @@ model Ride {
   createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
-  rider  User        @relation("RideRider", fields: [riderId], references: [id], onDelete: Restrict)
-  pilot  User?       @relation("RidePilot", fields: [pilotId], references: [id], onDelete: Restrict)
-  offers RideOffer[]
-  events RideEvent[]
+  rider         User          @relation("RideRider", fields: [riderId], references: [id], onDelete: Restrict)
+  pilot         User?         @relation("RidePilot", fields: [pilotId], references: [id], onDelete: Restrict)
+  offers        RideOffer[]
+  events        RideEvent[]
+  walletEntries WalletEntry[]
+  payments      Payment[]
 
   @@index([riderId, requestedAt(sort: Desc)], map: "rides_rider_requested_idx")
   @@index([pilotId, completedAt(sort: Desc)], map: "rides_pilot_completed_idx")
@@ -356,4 +363,108 @@ model RideEvent {
 
   @@index([rideId, createdAt], map: "ride_events_ride_created_idx")
   @@map("ride_events")
+}
+
+// ------------------------------------------------------------------ money
+
+enum WalletEntryKind {
+  topup
+  ride_payment
+  ride_refund
+  cancellation_fee
+  waiting_fee
+  tip
+  referral_reward
+  cashback
+  pilot_earning
+  platform_fee
+  payout
+  cash_change
+  demo_grant
+
+  @@map("wallet_entry_kind")
+}
+
+enum PaymentPurpose {
+  topup
+  ride
+
+  @@map("payment_purpose")
+}
+
+enum PaymentRecordStatus {
+  created
+  paid
+  failed
+
+  @@map("payment_record_status")
+}
+
+enum PayoutStatus {
+  requested
+  paid
+
+  @@map("payout_status")
+}
+
+/// The money ledger (docs/DATABASE.md "Money"). Append-only: a trigger
+/// rejects UPDATE and DELETE. A balance is SUM(amount_paise). Balance-
+/// checked writes go through the plpgsql functions in the wallet migration.
+model WalletEntry {
+  id             String          @id @default(uuid()) @db.Uuid
+  userId         String          @map("user_id") @db.Uuid
+  /// Signed: credits positive, debits negative, never zero.
+  amountPaise    Int             @map("amount_paise")
+  kind           WalletEntryKind
+  rideId         String?         @map("ride_id") @db.Uuid
+  paymentId      String?         @map("payment_id") @db.Uuid
+  /// One entry per real-world event, however many times it's retried.
+  idempotencyKey String          @unique @map("idempotency_key") @db.VarChar(120)
+  note           String?         @db.VarChar(200)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  ride    Ride?    @relation(fields: [rideId], references: [id], onDelete: Restrict)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt(sort: Desc)], map: "wallet_entries_user_created_idx")
+  @@map("wallet_entries")
+}
+
+/// Razorpay orders (test mode). A wallet credit or ride payment happens
+/// only once a payment against the order is verified.
+model Payment {
+  id                String              @id @default(uuid()) @db.Uuid
+  userId            String              @map("user_id") @db.Uuid
+  purpose           PaymentPurpose
+  rideId            String?             @map("ride_id") @db.Uuid
+  amountPaise       Int                 @map("amount_paise")
+  razorpayOrderId   String              @unique @map("razorpay_order_id") @db.VarChar(64)
+  razorpayPaymentId String?             @unique @map("razorpay_payment_id") @db.VarChar(64)
+  status            PaymentRecordStatus @default(created)
+  failureReason     String?             @map("failure_reason") @db.VarChar(200)
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  ride          Ride?         @relation(fields: [rideId], references: [id], onDelete: Restrict)
+  walletEntries WalletEntry[]
+
+  @@index([userId, createdAt(sort: Desc)], map: "payments_user_created_idx")
+  @@map("payments")
+}
+
+/// Simulated Pilot withdrawals. No money leaves Comet.
+model Payout {
+  id          String       @id @default(uuid()) @db.Uuid
+  pilotId     String       @map("pilot_id") @db.Uuid
+  amountPaise Int          @map("amount_paise")
+  status      PayoutStatus @default(requested)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  paidAt      DateTime?    @map("paid_at") @db.Timestamptz
+
+  pilot User @relation(fields: [pilotId], references: [id], onDelete: Restrict)
+
+  @@index([pilotId, createdAt(sort: Desc)], map: "payouts_pilot_created_idx")
+  @@map("payouts")
 }

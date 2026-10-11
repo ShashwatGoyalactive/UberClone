@@ -6,7 +6,7 @@ import { AppFrame } from "@/components/AppFrame";
 import { CometLogo } from "@/components/icons/CometMark";
 import { requireUser } from "@/lib/auth/session";
 import { findPilotProfile } from "@/lib/repositories/pilots";
-import { getPilotActiveRide, getPilotStatus } from "@/lib/services/pilots";
+import { getPilotCurrentRide, getPilotStatus } from "@/lib/services/pilots";
 
 import { PilotConsole } from "./PilotConsole";
 
@@ -37,7 +37,7 @@ export default async function PilotHomePage() {
     );
   }
 
-  if (await getPilotActiveRide(user.id)) redirect("/pilot/trip");
+  if (await getPilotCurrentRide(user.id)) redirect("/pilot/trip");
   const { isOnline } = await getPilotStatus(user.id);
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
-import { Banknote } from "lucide-react";
+import { Banknote, CreditCard, Smartphone, Wallet } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -9,31 +10,55 @@ import { Button } from "@/components/ui/button";
 import { RIDE_TIERS, TIER_RATES, type RideTier } from "@/lib/fares";
 import { formatRupees, type Paise } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { PAYMENT_METHOD_LABELS, PAYMENT_METHODS, type PaymentMethod } from "@/lib/wallet";
 
 import { bookRideAction } from "../actions";
 
-/** The tier list and Book button on "4 · Choose ride". Prices come from the server's quote. */
+const METHOD_ICONS = { wallet: Wallet, upi: Smartphone, card: CreditCard, cash: Banknote };
+const METHOD_NOTES: Record<PaymentMethod, string> = {
+  wallet: "Paid automatically when the trip ends.",
+  upi: "You'll pay with any UPI app when the trip ends (test mode).",
+  card: "You'll pay by card when the trip ends (test mode).",
+  cash: "Pay your Pilot at the drop. Short on change? It can go to your wallet.",
+};
+
+/**
+ * The tier list, payment choice ("4b · Payment method") and Book button
+ * on "4 · Choose ride". Prices and the balance come from the server; the
+ * server checks the balance again when booking.
+ */
 export function RideOptions({
   quoteId,
   prices,
+  balancePaise,
+  returnPath,
 }: {
   quoteId: string;
   prices: Record<RideTier, Paise>;
+  balancePaise: Paise;
+  returnPath: string;
 }) {
   const router = useRouter();
   const [tier, setTier] = useState<RideTier>("go");
+  const [method, setMethod] = useState<PaymentMethod>(
+    balancePaise >= prices.go ? "wallet" : "cash",
+  );
+  const short = method === "wallet" && balancePaise < prices[tier];
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function book() {
     setError(null);
     startTransition(async () => {
-      const result = await bookRideAction({ quoteId, tier, paymentMethod: "cash" });
+      const result = await bookRideAction({ quoteId, tier, paymentMethod: method });
       if (result.ok) {
         router.push("/ride/trip");
         return;
       }
-      if (result.code === "CONFLICT" && result.message.includes("already have a ride")) {
+      if (
+        result.code === "CONFLICT" &&
+        (result.message.includes("already have a ride") || result.message.includes("last ride"))
+      ) {
         router.push("/ride/trip");
         return;
       }
@@ -79,12 +104,44 @@ export function RideOptions({
         })}
       </div>
 
-      <div className="flex h-12 items-center gap-2 rounded-md border border-border px-3 text-sm font-semibold">
-        <Banknote className="size-[18px] text-brand-text" aria-hidden />
-        Pay with cash
-        <span className="ml-auto text-xs font-medium text-muted-foreground">
-          Wallet &amp; UPI coming soon
-        </span>
+      <div className="flex flex-col gap-1.5">
+        <div role="radiogroup" aria-label="Pay with" className="grid grid-cols-4 gap-1.5">
+          {PAYMENT_METHODS.map((m) => {
+            const Icon = METHOD_ICONS[m];
+            const on = m === method;
+            return (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => setMethod(m)}
+                className={cn(
+                  "flex h-14 flex-col items-center justify-center gap-0.5 rounded-md border-2 text-xs font-semibold",
+                  on ? "border-primary bg-brand-soft" : "border-border",
+                )}
+              >
+                <Icon className="size-[18px] text-brand-text" aria-hidden />
+                {m === "wallet" ? formatRupees(balancePaise) : PAYMENT_METHOD_LABELS[m]}
+                <span className="sr-only">{m === "wallet" ? " in Comet Wallet" : ""}</span>
+              </button>
+            );
+          })}
+        </div>
+        {short ? (
+          <p className="text-[13px] font-semibold text-danger-text">
+            Your wallet has {formatRupees(balancePaise)}.{" "}
+            <Link
+              href={`/ride/wallet?return=${encodeURIComponent(returnPath)}`}
+              className="text-info underline"
+            >
+              Add {formatRupees(prices[tier] - balancePaise)} or more
+            </Link>{" "}
+            or choose another way to pay.
+          </p>
+        ) : (
+          <p className="text-[13px] text-muted-foreground">{METHOD_NOTES[method]}</p>
+        )}
       </div>
 
       {error && (
@@ -92,7 +149,11 @@ export function RideOptions({
           {error}
         </p>
       )}
-      <Button onClick={book} disabled={pending} className="h-14 rounded-lg text-[17px] font-bold">
+      <Button
+        onClick={book}
+        disabled={pending || short}
+        className="h-14 rounded-lg text-[17px] font-bold"
+      >
         {pending ? "Booking…" : `Book ${TIER_RATES[tier].label}`}
       </Button>
     </>

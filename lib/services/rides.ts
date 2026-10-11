@@ -3,7 +3,8 @@ import "server-only";
 import { randomInt } from "node:crypto";
 
 import { AppError } from "@/lib/errors";
-import type { RideTier } from "@/lib/fares";
+import { splitFare, type RideTier } from "@/lib/fares";
+import { formatRupees } from "@/lib/money";
 import { publicName } from "@/lib/names";
 import type { LatLng } from "@/lib/geo";
 import { broadcast } from "@/lib/realtime/broadcast";
@@ -15,6 +16,7 @@ import {
   closeOtherOffers,
   findActiveRideForRider,
   findRideForParticipant,
+  findUnpaidRideForRider,
   insertRide,
   transitionRide,
   type RideWithPilot,
@@ -23,6 +25,8 @@ import { findUser } from "@/lib/repositories/users";
 import { isActive, type RideStatus } from "@/lib/ride-state";
 import { offerNextWave, refreshRequestedRide } from "@/lib/services/matching";
 import { getValidQuote } from "@/lib/services/quotes";
+import { walletBalance } from "@/lib/repositories/wallet";
+import type { PaymentMethod } from "@/lib/wallet";
 
 /**
  * The rider's side of a ride: book from a locked quote, follow it, cancel.
@@ -41,7 +45,9 @@ export type RideView = {
   waitingFeePaise: number;
   cancellationFeePaise: number;
   totalPaise: number;
-  paymentMethod: string;
+  platformFeePaise: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: "pending" | "paid" | "failed" | "refunded" | "waived";
   isDemo: boolean;
   arrivedAt: string | null;
   startedAt: string | null;
@@ -74,7 +80,9 @@ export async function toRideView(ride: RideWithPilot, forRider: boolean): Promis
     waitingFeePaise: ride.waitingFeePaise,
     cancellationFeePaise: ride.cancellationFeePaise,
     totalPaise: ride.totalPaise,
+    platformFeePaise: ride.platformFeePaise,
     paymentMethod: ride.paymentMethod,
+    paymentStatus: ride.paymentStatus,
     isDemo: ride.isDemo,
     arrivedAt: ride.arrivedAt?.toISOString() ?? null,
     startedAt: ride.startedAt?.toISOString() ?? null,
@@ -98,7 +106,7 @@ export async function toRideView(ride: RideWithPilot, forRider: boolean): Promis
 export type BookInput = {
   quoteId: string;
   tier: RideTier;
-  paymentMethod: "cash";
+  paymentMethod: PaymentMethod;
 };
 
 /** Books a ride from a locked quote and offers it to the first wave. */
@@ -110,11 +118,25 @@ export async function bookRide(riderId: string, input: BookInput, now: Date = ne
   if (existing) {
     throw new AppError("CONFLICT", "You already have a ride in progress.");
   }
+  if (await findUnpaidRideForRider(riderId)) {
+    throw new AppError("CONFLICT", "Pay for your last ride first.");
+  }
 
   const quote = await getValidQuote(riderId, input.quoteId, now);
   const prices = quote.prices as Record<RideTier, number>;
   const fare = prices[input.tier];
   if (typeof fare !== "number") throw new AppError("VALIDATION", "That ride type isn't available.");
+
+  // Checked again when the trip ends: a waiting fee can raise the total.
+  if (input.paymentMethod === "wallet") {
+    const balance = await walletBalance(riderId);
+    if (balance < fare) {
+      throw new AppError(
+        "INSUFFICIENT_BALANCE",
+        `Your wallet has ${formatRupees(balance)}. Top up ${formatRupees(fare - balance)} or choose another way to pay.`,
+      );
+    }
+  }
 
   let ride;
   try {
@@ -134,6 +156,7 @@ export async function bookRide(riderId: string, input: BookInput, now: Date = ne
         durationS: quote.durationS,
         farePaise: fare,
         totalPaise: fare,
+        platformFeePaise: splitFare(fare).platformFee,
         paymentMethod: input.paymentMethod,
         rideCode: String(randomInt(0, 10_000)).padStart(4, "0"),
         isDemo: rider.isDemo,
@@ -167,6 +190,17 @@ export async function getRiderActiveRide(
   // Refreshing can end the ride (it expired); an ended ride isn't active.
   if (!ride || !isActive(ride.status)) return null;
   return toRideView(ride, true);
+}
+
+/**
+ * What the trip screen shows: the active ride, or else the last finished
+ * ride that still needs paying (so a reload mid-payment comes back here).
+ */
+export async function getRiderCurrentRide(riderId: string, now: Date = new Date()) {
+  const active = await getRiderActiveRide(riderId, now);
+  if (active) return active;
+  const unpaidRide = await findUnpaidRideForRider(riderId);
+  return unpaidRide ? toRideView(unpaidRide, true) : null;
 }
 
 /** One ride the rider took part in, active or finished (for the trip screen). */

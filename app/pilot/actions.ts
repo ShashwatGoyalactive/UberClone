@@ -19,6 +19,9 @@ import {
   markArrived,
   startTrip,
 } from "@/lib/services/trips";
+import { confirmCashPayment } from "@/lib/services/payments";
+import { requestPayout } from "@/lib/services/wallet";
+import { cashPaymentSchema, payoutSchema } from "@/lib/validation/payments";
 import {
   locationUpdateSchema,
   offerIdSchema,
@@ -142,5 +145,29 @@ export async function noShowAction(input: unknown) {
     const user = await requirePilotUser();
     await cancelAsNoShow(user.id, rideIdFrom(input));
     return { ok: true };
+  });
+}
+
+export async function confirmCashAction(input: unknown) {
+  return runAction("payment.cash", async () => {
+    const user = await requirePilotUser();
+    const parsed = cashPaymentSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("VALIDATION", "Enter the amount you received.");
+    return confirmCashPayment(
+      user.id,
+      parsed.data.rideId,
+      parsed.data.receivedPaise,
+      parsed.data.creditChangeToWallet,
+    );
+  });
+}
+
+/** "Withdraw" on the earnings screen. Simulated: no money leaves Comet. */
+export async function requestPayoutAction(input: unknown) {
+  return runAction("payout.request", async () => {
+    const user = await requirePilotUser();
+    const parsed = payoutSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("VALIDATION", "There's nothing to withdraw yet.");
+    return requestPayout(user.id, parsed.data.amountPaise, parsed.data.requestId);
   });
 }

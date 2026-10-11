@@ -49,6 +49,13 @@ export function simStep(elapsedS: number): SimStep {
 export const SIM_TOTAL_S = SIM.ACCEPT_AT_S + SIM.APPROACH_S + SIM.WAIT_S + SIM.TRIP_S;
 
 /**
+ * For a cash ride, how long after the drop the bot taps "Cash received"
+ * (the exact fare, no change) — long enough for the rider to see the
+ * "pay your Pilot" screen.
+ */
+export const SIM_CASH_CONFIRM_S = 6;
+
+/**
  * Where the bot starts: START_DISTANCE_M away from the pickup, offset
  * diagonally so its approach reads as a drive, not a teleport.
  */

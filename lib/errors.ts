@@ -15,6 +15,8 @@ export type ErrorCode =
   | "RATE_LIMITED"
   | "CONFLICT"
   | "INVALID_CODE"
+  | "INSUFFICIENT_BALANCE"
+  | "PAYMENT_FAILED"
   | "INTERNAL";
 
 export class AppError extends Error {

@@ -22,10 +22,11 @@ import {
   startTripAction,
   updateLocationAction,
 } from "../actions";
+import { TripSettlement } from "./TripSettlement";
 
 /**
  * The Pilot's trip: "4 · Pickup & OTP", "7 · Waiting & no-show",
- * "5 · On trip", then the cash to collect. Buttons are 56px+ because this
+ * "5 · On trip", then "5c · Collect cash or UPI" (TripSettlement). Buttons are 56px+ because this
  * is used in a moving car (docs/DESIGN_SYSTEM.md §1).
  */
 export function PilotTrip({ initial }: { initial: RideView }) {
@@ -37,7 +38,11 @@ export function PilotTrip({ initial }: { initial: RideView }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [now, setNow] = useState(() => Date.now());
-  const finished = ["completed", "cancelled", "no_show", "expired"].includes(ride.status);
+  const ended = ["completed", "cancelled", "no_show", "expired"].includes(ride.status);
+  const awaitingPayment =
+    ride.status === "completed" &&
+    (ride.paymentStatus === "pending" || ride.paymentStatus === "failed");
+  const finished = ended && !awaitingPayment;
 
   async function refresh() {
     const result = await getPilotRideAction({ rideId: ride.id });
@@ -50,10 +55,10 @@ export function PilotTrip({ initial }: { initial: RideView }) {
     void updateLocationAction({ point: position, headingDeg: null, speedKmh: null });
   });
   useEffect(() => {
-    if (finished) return;
+    if (ended) return;
     const timer = setInterval(() => sendLocation(), 4_000);
     return () => clearInterval(timer);
-  }, [finished]);
+  }, [ended]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1_000);
@@ -78,7 +83,11 @@ export function PilotTrip({ initial }: { initial: RideView }) {
   const clock = (s: number) =>
     `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-  if (finished) {
+  if (ride.status === "completed") {
+    return <TripSettlement ride={ride} onChange={refresh} onDone={() => router.push("/pilot")} />;
+  }
+
+  if (ended) {
     return (
       <main className="flex min-h-dvh flex-col gap-5 px-5 pt-8 pb-6">
         <div className="flex flex-col items-center gap-2.5 text-center">
@@ -86,21 +95,9 @@ export function PilotTrip({ initial }: { initial: RideView }) {
             <Check className="size-8" aria-hidden strokeWidth={2.6} />
           </div>
           <h1 className="font-heading text-[26px] font-bold tracking-tight">
-            {ride.status === "completed"
-              ? "Trip complete"
-              : ride.status === "no_show"
-                ? "Marked as no-show"
-                : "Ride ended"}
+            {ride.status === "no_show" ? "Marked as no-show" : "Ride ended"}
           </h1>
         </div>
-        {ride.status === "completed" && (
-          <section className="flex flex-col items-center gap-1 rounded-xl bg-ink p-6 text-on-ink">
-            <span className="text-sm text-ink-muted">Collect in cash</span>
-            <span className="font-heading text-4xl font-bold" data-testid="collect-total">
-              {formatRupees(ride.totalPaise)}
-            </span>
-          </section>
-        )}
         {ride.status === "no_show" && (
           <p className="text-center text-muted-foreground">
             You&apos;ll receive the {formatRupees(ride.cancellationFeePaise)} no-show fee.
@@ -225,7 +222,13 @@ export function PilotTrip({ initial }: { initial: RideView }) {
                 {formatRupees(ride.totalPaise)}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">Cash to collect at the drop.</p>
+            <p className="text-sm text-muted-foreground">
+              {ride.paymentMethod === "cash"
+                ? "Cash to collect at the drop."
+                : ride.paymentMethod === "wallet"
+                  ? "Paid from the rider's Comet Wallet when you end the trip."
+                  : `The rider pays by ${ride.paymentMethod === "card" ? "card" : "UPI"} at the drop.`}
+            </p>
             <Button
               onClick={() => run(() => endTripAction({ rideId: ride.id }))}
               disabled={pending}

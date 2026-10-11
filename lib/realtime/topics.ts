@@ -16,4 +16,5 @@ export const EVENTS = {
   pilotLocation: "pilot.location",
   offerCreated: "offer.created",
   offerGone: "offer.gone",
+  walletUpdated: "wallet.updated",
 } as const;

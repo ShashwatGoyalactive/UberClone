@@ -1,6 +1,6 @@
 "use client";
 
-import { Power, Star, X } from "lucide-react";
+import { IndianRupee, Power, Star, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useState, useTransition } from "react";
@@ -119,6 +119,13 @@ export function PilotConsole({
           className="flex size-12 shrink-0 items-center justify-center rounded-full bg-card font-heading text-base font-bold shadow-float"
         >
           {initials}
+        </Link>
+        <Link
+          href="/pilot/earnings"
+          aria-label="Earnings"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-card shadow-float"
+        >
+          <IndianRupee className="size-5" aria-hidden strokeWidth={2.4} />
         </Link>
         <button
           type="button"
