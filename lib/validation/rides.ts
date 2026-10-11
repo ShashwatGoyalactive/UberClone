@@ -31,3 +31,11 @@ export const locationUpdateSchema = z.object({
   headingDeg: z.number().min(0).max(360).nullable().default(null),
   speedKmh: z.number().min(0).max(250).nullable().default(null),
 });
+
+export const startTripSchema = z.object({
+  rideId: z.uuid(),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{4}$/),
+});

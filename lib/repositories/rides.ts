@@ -209,3 +209,16 @@ export async function closeOtherOffers(
   }
   return open;
 }
+
+/**
+ * Counts a wrong ride code and returns the new total. One statement, so
+ * two quick guesses can't both read the same count.
+ */
+export async function recordWrongRideCode(rideId: string): Promise<number> {
+  const updated = await db.ride.update({
+    where: { id: rideId },
+    data: { rideCodeAttempts: { increment: 1 } },
+    select: { rideCodeAttempts: true },
+  });
+  return updated.rideCodeAttempts;
+}

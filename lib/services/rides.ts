@@ -37,8 +37,15 @@ export type RideView = {
   routeCoordinates: [number, number][];
   distanceM: number;
   durationS: number;
+  farePaise: number;
+  waitingFeePaise: number;
+  cancellationFeePaise: number;
   totalPaise: number;
   paymentMethod: string;
+  isDemo: boolean;
+  arrivedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
   /** Only ever present in the rider's own view (docs/DATABASE.md §10). */
   rideCode?: string;
   pilot?: {
@@ -63,8 +70,15 @@ export async function toRideView(ride: RideWithPilot, forRider: boolean): Promis
     routeCoordinates: ride.routeCoordinates as [number, number][],
     distanceM: ride.distanceM,
     durationS: ride.durationS,
+    farePaise: ride.farePaise,
+    waitingFeePaise: ride.waitingFeePaise,
+    cancellationFeePaise: ride.cancellationFeePaise,
     totalPaise: ride.totalPaise,
     paymentMethod: ride.paymentMethod,
+    isDemo: ride.isDemo,
+    arrivedAt: ride.arrivedAt?.toISOString() ?? null,
+    startedAt: ride.startedAt?.toISOString() ?? null,
+    completedAt: ride.completedAt?.toISOString() ?? null,
     ...(forRider ? { rideCode: ride.rideCode } : {}),
     ...(ride.pilot && profile
       ? {

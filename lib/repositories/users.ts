@@ -71,3 +71,29 @@ export async function ensureApprovedDemoPilot(userId: string, vehicle: DemoVehic
     update: {},
   });
 }
+
+export async function findSimulatedPilotFor(riderId: string): Promise<string | null> {
+  const bot = await db.pilotProfile.findFirst({
+    where: { simulatedForUserId: riderId, isSimulated: true },
+    select: { userId: true },
+  });
+  return bot?.userId ?? null;
+}
+
+export async function createSimulatedPilotProfile(
+  botId: string,
+  riderId: string,
+  vehicle: DemoVehicle,
+): Promise<void> {
+  await db.pilotProfile.create({
+    data: {
+      userId: botId,
+      status: "approved",
+      approvedAt: new Date(),
+      isSimulated: true,
+      simulatedForUserId: riderId,
+      ratingAvg: 4.9,
+      ...vehicle,
+    },
+  });
+}

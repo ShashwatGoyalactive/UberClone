@@ -43,6 +43,7 @@ export default function MapboxMap(props: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
+  const carMarker = useRef<mapboxgl.Marker | null>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -81,6 +82,17 @@ export default function MapboxMap(props: MapViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const tripKey = JSON.stringify([
+    center,
+    you,
+    pickup,
+    drop,
+    route?.length,
+    route?.[0],
+    route?.at(-1),
+    bottomInset,
+  ]);
+
   // Route, markers and framing whenever the trip changes.
   useEffect(() => {
     const m = map.current;
@@ -100,7 +112,6 @@ export default function MapboxMap(props: MapViewProps) {
     if (!pickup) add(you, "you");
     add(pickup, "pickup");
     add(drop, "drop");
-    add(car, "car");
 
     const data: GeoJSON.Feature = {
       type: "Feature",
@@ -138,7 +149,29 @@ export default function MapboxMap(props: MapViewProps) {
     } else {
       m.easeTo({ center: [center.lng, center.lat], padding, duration: 600, zoom: 14.5 });
     }
-  }, [ready, center, you, pickup, drop, car, route, bottomInset]);
+    // Keyed on the values, not object identity: a poll that returns the
+    // same trip must not re-frame the map under the rider's finger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, tripKey]);
+
+  // The car moves on its own, every few seconds, without re-framing.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    if (!car) {
+      carMarker.current?.remove();
+      carMarker.current = null;
+      return;
+    }
+    if (!carMarker.current) {
+      carMarker.current = new mapboxgl.Marker({ element: markerEl("car") })
+        .setLngLat([car.lng, car.lat])
+        .addTo(m);
+    } else {
+      carMarker.current.setLngLat([car.lng, car.lat]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, car?.lat, car?.lng]);
 
   if (failed) return <FallbackMap {...props} />;
   return (

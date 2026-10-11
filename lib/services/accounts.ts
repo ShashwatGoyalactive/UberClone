@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import type { DemoRole, User } from "@prisma/client";
 
 import { generateCometId, secureRandom } from "@/lib/comet-id";
@@ -7,8 +9,10 @@ import { AppError } from "@/lib/errors";
 import { log } from "@/lib/log";
 import { displayNameFromEmail } from "@/lib/names";
 import {
+  createSimulatedPilotProfile,
   ensureApprovedDemoPilot,
   ensureRiderProfile,
+  findSimulatedPilotFor,
   findUser,
   insertUser,
   setDemoRole,
@@ -124,7 +128,32 @@ export async function setUpDemo(
     user = { ...user, demoRole: role };
   }
 
-  if (role === "rider") await ensureRiderProfile(user.id);
-  else await ensureApprovedDemoPilot(user.id, DEMO_VEHICLE);
+  if (role === "rider") {
+    await ensureRiderProfile(user.id);
+    await ensureSimulatedPilot(user.id, random);
+  } else {
+    await ensureApprovedDemoPilot(user.id, DEMO_VEHICLE);
+  }
   return user;
+}
+
+/**
+ * Every demo rider gets a private bot Pilot that drives their ride if no
+ * real Pilot accepts first (docs/ARCHITECTURE.md §9). It's a users row
+ * with no Supabase auth user behind it, so nobody can sign in as it, and
+ * it has no live location row, so matching never offers it other rides.
+ */
+export async function ensureSimulatedPilot(
+  riderId: string,
+  random: () => number = secureRandom,
+): Promise<string> {
+  const existing = await findSimulatedPilotFor(riderId);
+  if (existing) return existing;
+  const bot = await createUserWithCometId(
+    { id: randomUUID(), email: null, isAnonymous: true },
+    { displayName: DEMO_PERSONAS.pilot.displayName, isDemo: true, demoRole: "pilot" },
+    random,
+  );
+  await createSimulatedPilotProfile(bot.id, riderId, DEMO_VEHICLE);
+  return bot.id;
 }

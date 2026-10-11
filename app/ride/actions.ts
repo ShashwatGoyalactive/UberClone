@@ -4,9 +4,14 @@ import { runAction } from "@/lib/actions";
 import { getCurrentUser } from "@/lib/auth/session";
 import { AppError } from "@/lib/errors";
 import { quoteFare, searchPlaces } from "@/lib/services/quotes";
-import { bookRide, cancelRideAsRider, getRiderActiveRide } from "@/lib/services/rides";
+import {
+  bookRide,
+  cancelRideAsRider,
+  getRiderActiveRide,
+  getRiderRide,
+} from "@/lib/services/rides";
 import { quoteRequestSchema, searchPlacesSchema } from "@/lib/validation/places";
-import { bookRideSchema, cancelRideSchema } from "@/lib/validation/rides";
+import { bookRideSchema, cancelRideSchema, rideIdSchema } from "@/lib/validation/rides";
 
 /** Rider actions (docs/API.md "Places and quotes", "Rides (rider)"). */
 
@@ -60,5 +65,15 @@ export async function cancelRideAction(input: unknown) {
     if (!parsed.success) throw new AppError("VALIDATION", "That ride can't be cancelled.");
     await cancelRideAsRider(user.id, parsed.data.rideId, parsed.data.reason);
     return { cancelled: true };
+  });
+}
+
+/** One of the rider's rides, active or finished — the trip screen's poll. */
+export async function getRideAction(input: unknown) {
+  return runAction("ride.get", async () => {
+    const user = await requireRider();
+    const parsed = rideIdSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("NOT_FOUND", "That ride doesn't exist.");
+    return getRiderRide(user.id, parsed.data.rideId);
   });
 }

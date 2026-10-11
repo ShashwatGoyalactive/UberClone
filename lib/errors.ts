@@ -14,6 +14,7 @@ export type ErrorCode =
   | "VALIDATION"
   | "RATE_LIMITED"
   | "CONFLICT"
+  | "INVALID_CODE"
   | "INTERNAL";
 
 export class AppError extends Error {

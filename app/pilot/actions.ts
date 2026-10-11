@@ -12,7 +12,20 @@ import {
   listOpenOffers,
   updatePilotLocation,
 } from "@/lib/services/pilots";
-import { locationUpdateSchema, offerIdSchema, setOnlineSchema } from "@/lib/validation/rides";
+import {
+  cancelAsNoShow,
+  endTrip,
+  getPilotRide,
+  markArrived,
+  startTrip,
+} from "@/lib/services/trips";
+import {
+  locationUpdateSchema,
+  offerIdSchema,
+  rideIdSchema,
+  setOnlineSchema,
+  startTripSchema,
+} from "@/lib/validation/rides";
 
 /** Pilot actions (docs/API.md "Rides (Pilot)"). */
 
@@ -82,5 +95,52 @@ export async function getPilotActiveRideAction() {
   return runAction("pilot.active_ride", async () => {
     const user = await requirePilotUser();
     return getPilotActiveRide(user.id);
+  });
+}
+
+function rideIdFrom(input: unknown) {
+  const parsed = rideIdSchema.safeParse(input);
+  if (!parsed.success) throw new AppError("NOT_FOUND", "That ride doesn't exist.");
+  return parsed.data.rideId;
+}
+
+export async function getPilotRideAction(input: unknown) {
+  return runAction("pilot.ride", async () => {
+    const user = await requirePilotUser();
+    return getPilotRide(user.id, rideIdFrom(input));
+  });
+}
+
+export async function markArrivedAction(input: unknown) {
+  return runAction("trip.arrived", async () => {
+    const user = await requirePilotUser();
+    await markArrived(user.id, rideIdFrom(input));
+    return { ok: true };
+  });
+}
+
+export async function startTripAction(input: unknown) {
+  return runAction("trip.start", async () => {
+    const user = await requirePilotUser();
+    const parsed = startTripSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_CODE", "Enter the rider's 4-digit code.");
+    await startTrip(user.id, parsed.data.rideId, parsed.data.code);
+    return { ok: true };
+  });
+}
+
+export async function endTripAction(input: unknown) {
+  return runAction("trip.end", async () => {
+    const user = await requirePilotUser();
+    await endTrip(user.id, rideIdFrom(input));
+    return { ok: true };
+  });
+}
+
+export async function noShowAction(input: unknown) {
+  return runAction("trip.no_show", async () => {
+    const user = await requirePilotUser();
+    await cancelAsNoShow(user.id, rideIdFrom(input));
+    return { ok: true };
   });
 }
