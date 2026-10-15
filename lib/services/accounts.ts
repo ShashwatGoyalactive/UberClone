@@ -16,8 +16,11 @@ import {
   findUser,
   insertUser,
   setDemoRole,
+  setDemoSafetyPin,
 } from "@/lib/repositories/users";
 import { grantDemoWallet } from "@/lib/services/wallet";
+import { hashPin } from "@/lib/services/sos";
+import { DEMO_SAFETY_PIN } from "@/lib/safety";
 
 /**
  * Accounts: the bridge between a Supabase auth user and Comet's own
@@ -128,6 +131,11 @@ export async function setUpDemo(
   } else if (user.demoRole !== role) {
     await setDemoRole(user.id, role);
     user = { ...user, demoRole: role };
+  }
+
+  // Demo accounts get a known safety PIN so a visitor can end a test SOS.
+  if (!user.safetyPinHash) {
+    await setDemoSafetyPin(user.id, await hashPin(DEMO_SAFETY_PIN));
   }
 
   if (role === "rider") {

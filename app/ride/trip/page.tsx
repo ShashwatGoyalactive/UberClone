@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AppFrame } from "@/components/AppFrame";
 import { requireUser } from "@/lib/auth/session";
 import { getRiderCurrentRide } from "@/lib/services/rides";
+import { getOpenSos } from "@/lib/services/sos";
 
 import { RideTracker } from "./RideTracker";
 
@@ -15,7 +16,11 @@ export default async function TripPage() {
   if (!ride) redirect("/ride");
   return (
     <AppFrame>
-      <RideTracker initial={ride} />
+      <RideTracker
+        initial={ride}
+        initialSos={await getOpenSos(user.id, ride.id)}
+        isDemoUser={user.isDemo}
+      />
     </AppFrame>
   );
 }

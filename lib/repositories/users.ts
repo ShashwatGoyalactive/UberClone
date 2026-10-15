@@ -112,3 +112,11 @@ export async function createSimulatedPilotProfile(
     },
   });
 }
+
+/** Only for demo accounts, whose PIN is the published demo PIN. */
+export async function setDemoSafetyPin(userId: string, pinHash: string): Promise<void> {
+  await db.user.updateMany({
+    where: { id: userId, isDemo: true, safetyPinHash: null },
+    data: { safetyPinHash: pinHash },
+  });
+}

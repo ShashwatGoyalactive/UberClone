@@ -1,11 +1,12 @@
 "use client";
 
-import { Check, Clock, Phone, ShieldAlert, Star } from "lucide-react";
+import { Check, Clock, Phone, Share2, ShieldAlert, Star } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { LiveMap } from "@/components/map/LiveMap";
 import { RatingForm } from "@/components/RatingForm";
+import { SosFlow } from "@/components/safety/SosFlow";
 import { Button } from "@/components/ui/button";
 import { CANCEL_REASONS, cancellationFee, type CancelReasonId } from "@/lib/cancellation";
 import { TIER_RATES } from "@/lib/fares";
@@ -14,8 +15,11 @@ import { starString } from "@/lib/ratings";
 import { topics } from "@/lib/realtime/topics";
 import { useLive } from "@/lib/realtime/use-live";
 import type { RideView } from "@/lib/services/rides";
+import type { SosView } from "@/lib/services/sos";
 import { cn } from "@/lib/utils";
 import { PAYMENT_METHOD_LABELS } from "@/lib/wallet";
+
+import { createShareLinkAction } from "@/app/safety/actions";
 
 import { cancelRideAction, getRideAction } from "../actions";
 import { TripPayment } from "./TripPayment";
@@ -27,11 +31,46 @@ import { TripPayment } from "./TripPayment";
  * A demo ride polls /api/demo/tick instead, which also drives its
  * simulated Pilot.
  */
-export function RideTracker({ initial }: { initial: RideView }) {
+export function RideTracker({
+  initial,
+  initialSos,
+  isDemoUser,
+}: {
+  initial: RideView;
+  initialSos: SosView | null;
+  isDemoUser: boolean;
+}) {
   const [ride, setRide] = useState<RideView>(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
+  const [sosOpen, setSosOpen] = useState(initialSos !== null);
+  const [share, setShare] = useState<{ url: string; copied: boolean } | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+
+  async function shareTrip() {
+    setShareError(null);
+    const result = await createShareLinkAction({ rideId: ride.id });
+    if (!result.ok) {
+      setShareError(result.message);
+      return;
+    }
+    const url = `${window.location.origin}${result.data.path}`;
+    let copied = false;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Follow my Comet ride", text: "Track my ride live:", url });
+      } catch {
+        // Closed the share sheet; the link below still works.
+      }
+    } else {
+      copied = await navigator.clipboard?.writeText(url).then(
+        () => true,
+        () => false,
+      );
+    }
+    setShare({ url, copied: Boolean(copied) });
+  }
   const ended = ["completed", "cancelled", "expired", "no_show"].includes(ride.status);
   const awaitingPayment =
     ride.status === "completed" &&
@@ -98,8 +137,7 @@ export function RideTracker({ initial }: { initial: RideView }) {
         <div className="absolute top-6 right-5">
           <Button
             variant="destructive"
-            disabled
-            title="SOS arrives with the safety features"
+            onClick={() => setSosOpen(true)}
             className="h-12 rounded-full bg-destructive px-5 font-bold text-white shadow-float"
           >
             <ShieldAlert className="size-[18px]" aria-hidden />
@@ -157,6 +195,34 @@ export function RideTracker({ initial }: { initial: RideView }) {
             </div>
 
             {ride.pilot && <PilotCard pilot={ride.pilot} />}
+
+            <Button
+              variant="outline"
+              onClick={() => void shareTrip()}
+              className="h-12 rounded-lg font-bold"
+            >
+              <Share2 className="size-[18px]" aria-hidden />
+              Share trip
+            </Button>
+            {share && (
+              <p
+                role="status"
+                className="flex flex-col gap-1 rounded-md bg-info-soft px-3 py-2 text-[13px] text-info"
+              >
+                <span className="font-semibold">
+                  {share.copied ? "Link copied. " : ""}Anyone with this link can follow your ride
+                  live until an hour after it ends.
+                </span>
+                <span className="truncate font-mono text-xs" data-testid="share-url">
+                  {share.url}
+                </span>
+              </p>
+            )}
+            {shareError && (
+              <p role="alert" className="text-sm font-semibold text-danger-text">
+                {shareError}
+              </p>
+            )}
           </>
         )}
 
@@ -202,6 +268,22 @@ export function RideTracker({ initial }: { initial: RideView }) {
           </div>
         )}
       </section>
+      {sosOpen && (
+        <SosFlow
+          rideId={ride.id}
+          role="rider"
+          initialAlert={initialSos}
+          subject={`Trip with ${ride.pilot?.name.split(" ")[0] ?? "your Pilot"} · ${ride.pilot?.plate ?? ""}`}
+          details={
+            ride.pilot
+              ? `${ride.pilot.name} · ${ride.pilot.plate} · ${ride.pilot.cometId}`
+              : "Your ride and route"
+          }
+          isDemo={isDemoUser}
+          onShare={() => void shareTrip()}
+          onClose={() => setSosOpen(false)}
+        />
+      )}
       {confirming && (
         <CancelSheet
           ride={ride}

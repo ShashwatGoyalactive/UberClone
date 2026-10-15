@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AppFrame } from "@/components/AppFrame";
 import { requireUser } from "@/lib/auth/session";
 import { getPilotCurrentRide } from "@/lib/services/pilots";
+import { getOpenSos } from "@/lib/services/sos";
 
 import { PilotTrip } from "./PilotTrip";
 
@@ -15,7 +16,11 @@ export default async function PilotTripPage() {
   if (!ride) redirect("/pilot");
   return (
     <AppFrame>
-      <PilotTrip initial={ride} />
+      <PilotTrip
+        initial={ride}
+        initialSos={await getOpenSos(user.id, ride.id)}
+        isDemoUser={user.isDemo}
+      />
     </AppFrame>
   );
 }

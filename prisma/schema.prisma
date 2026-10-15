@@ -69,9 +69,10 @@ model User {
   rideOffers    RideOffer[]
   walletEntries WalletEntry[]
   payments      Payment[]
-  ratings       Rating[]
   payouts       Payout[]
   ratingsGiven  Rating[]       @relation("RatingRater")
+  shareLinks    ShareLink[]
+  sosRaised     SosAlert[]     @relation("SosRaisedBy")
   ratingsGot    Rating[]       @relation("RatingRatee")
 
   @@index([isDemo, createdAt], map: "users_demo_created_idx")
@@ -329,6 +330,8 @@ model Ride {
   pilot         User?         @relation("RidePilot", fields: [pilotId], references: [id], onDelete: Restrict)
   offers        RideOffer[]
   events        RideEvent[]
+  shareLinks    ShareLink[]
+  sosAlerts     SosAlert[]
   walletEntries WalletEntry[]
   payments      Payment[]
   ratings       Rating[]
@@ -490,13 +493,80 @@ model Rating {
   comment   String?  @db.VarChar(500)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  ride   Ride    @relation(fields: [rideId], references: [id], onDelete: Restrict)
-  rater  User    @relation("RatingRater", fields: [raterId], references: [id], onDelete: Restrict)
-  ratee  User    @relation("RatingRatee", fields: [rateeId], references: [id], onDelete: Restrict)
-  user   User?   @relation(fields: [userId], references: [id])
-  userId String? @db.Uuid
+  ride  Ride @relation(fields: [rideId], references: [id], onDelete: Restrict)
+  rater User @relation("RatingRater", fields: [raterId], references: [id], onDelete: Restrict)
+  ratee User @relation("RatingRatee", fields: [rateeId], references: [id], onDelete: Restrict)
 
   @@unique([rideId, raterId], map: "ratings_ride_rater_key")
   @@index([rateeId, createdAt(sort: Desc)], map: "ratings_ratee_created_idx")
   @@map("ratings")
+}
+
+// ----------------------------------------------------------------- safety
+
+enum SosRole {
+  rider
+  pilot
+
+  @@map("sos_role")
+}
+
+enum SosReason {
+  rider_unsafe
+  accident
+  medical
+  vehicle
+  other
+
+  @@map("sos_reason")
+}
+
+enum SosStatus {
+  open
+  acknowledged
+  resolved
+
+  @@map("sos_status")
+}
+
+/// "Share trip" links (docs/DATABASE.md "share_links"). Only the SHA-256 of
+/// the token is stored; the token itself exists only in the link.
+model ShareLink {
+  id        String    @id @default(uuid()) @db.Uuid
+  rideId    String    @map("ride_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  createdBy String    @map("created_by") @db.Uuid
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  ride    Ride @relation(fields: [rideId], references: [id], onDelete: Restrict)
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([rideId], map: "share_links_ride_idx")
+  @@map("share_links")
+}
+
+/// SOS alerts (docs/DATABASE.md "sos_alerts"). Raising one is never blocked;
+/// ending it needs the raiser's safety PIN.
+model SosAlert {
+  id             String     @id @default(uuid()) @db.Uuid
+  rideId         String     @map("ride_id") @db.Uuid
+  raisedBy       String     @map("raised_by") @db.Uuid
+  raisedByRole   SosRole    @map("raised_by_role")
+  reason         SosReason?
+  status         SosStatus  @default(open)
+  assignedTo     String?    @map("assigned_to") @db.Uuid
+  lastLat        Float?     @map("last_lat")
+  lastLng        Float?     @map("last_lng")
+  resolutionNote String?    @map("resolution_note") @db.VarChar(500)
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  acknowledgedAt DateTime?  @map("acknowledged_at") @db.Timestamptz
+  resolvedAt     DateTime?  @map("resolved_at") @db.Timestamptz
+
+  ride   Ride @relation(fields: [rideId], references: [id], onDelete: Restrict)
+  raiser User @relation("SosRaisedBy", fields: [raisedBy], references: [id], onDelete: Restrict)
+
+  @@index([raisedBy, createdAt(sort: Desc)], map: "sos_alerts_raiser_idx")
+  @@map("sos_alerts")
 }

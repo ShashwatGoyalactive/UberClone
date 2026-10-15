@@ -53,3 +53,18 @@ describe("row-level security baseline", () => {
     await client.query("DELETE FROM users WHERE comet_id = 'CMT-TEST01'");
   });
 });
+
+describe("schema conventions (docs/DATABASE.md §2)", () => {
+  // Catches what `prisma format` does when a relation lands on the wrong
+  // model: it quietly adds a camelCase foreign key column.
+  it("names every column in snake_case", async () => {
+    const { rows } = await client.query<{ table_name: string; column_name: string }>(`
+      SELECT table_name, column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name <> '_prisma_migrations'
+    `);
+    const bad = rows
+      .filter((r) => !/^[a-z][a-z0-9_]*$/.test(r.column_name))
+      .map((r) => `${r.table_name}.${r.column_name}`);
+    expect(bad).toEqual([]);
+  });
+});

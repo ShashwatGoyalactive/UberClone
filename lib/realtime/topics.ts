@@ -9,6 +9,8 @@ export const topics = {
   ride: (rideId: string) => `ride:${rideId}`,
   pilot: (pilotId: string) => `pilot:${pilotId}`,
   rider: (riderId: string) => `rider:${riderId}`,
+  /** Ops dashboard alerts. Nobody can listen until the dashboard (phase 10) adds a policy. */
+  ops: "ops",
 } as const;
 
 export const EVENTS = {
@@ -17,4 +19,6 @@ export const EVENTS = {
   offerCreated: "offer.created",
   offerGone: "offer.gone",
   walletUpdated: "wallet.updated",
+  sosRaised: "sos.raised",
+  sosUpdated: "sos.updated",
 } as const;

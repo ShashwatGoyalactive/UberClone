@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+
 import { cn } from "@/lib/utils";
 
 import type { MapViewProps } from "./types";
@@ -12,8 +14,9 @@ import type { MapViewProps } from "./types";
  * behind them are decorative.
  */
 
-const W = 390;
-const H = 844;
+/** The decorative streets are drawn for a phone screen this size. */
+const BASE_W = 390;
+const BASE_H = 844;
 
 export function FallbackMap({
   center,
@@ -25,6 +28,23 @@ export function FallbackMap({
   bottomInset = 0,
   className,
 }: MapViewProps) {
+  // Markers are fitted to the box the map is actually drawn in, so a short
+  // map (a receipt header, the shared-trip page) still shows them.
+  const box = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: BASE_W, h: BASE_H });
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry!.contentRect;
+      if (width > 0 && height > 0) setSize({ w: Math.round(width), h: Math.round(height) });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const W = size.w;
+  const H = size.h;
+
   const pts: [number, number][] = [
     ...(route ?? []),
     ...[you, pickup, drop, car, center]
@@ -41,11 +61,17 @@ export function FallbackMap({
   const maxLng = Math.max(...lngs) + pad;
   const minLat = Math.min(...lats) - pad;
   const maxLat = Math.max(...lats) + pad;
-  const scale = Math.min((W - 80) / (maxLng - minLng), (visibleH - 160) / (maxLat - minLat));
+  // Room for the floating controls at the top and the markers' size.
+  const padY = Math.min(160, visibleH * 0.35);
+  const shiftY = Math.min(40, visibleH * 0.08);
+  const scale = Math.min((W - 80) / (maxLng - minLng), (visibleH - padY) / (maxLat - minLat));
   const cx = (minLng + maxLng) / 2;
   const cy = (minLat + maxLat) / 2;
   const project = ([lng, lat]: [number, number]) =>
-    [W / 2 + (lng - cx) * scale, visibleH / 2 + 40 - (lat - cy) * scale] as const;
+    [W / 2 + (lng - cx) * scale, visibleH / 2 + shiftY - (lat - cy) * scale] as const;
+  // Scale the street drawing to cover the box, centred.
+  const cover = Math.max(W / BASE_W, H / BASE_H);
+  const streets = `translate(${(W - BASE_W * cover) / 2} ${(H - BASE_H * cover) / 2}) scale(${cover})`;
 
   const routePath =
     route && route.length > 1
@@ -59,24 +85,31 @@ export function FallbackMap({
 
   return (
     <div
+      ref={box}
       className={cn("relative h-full w-full overflow-hidden bg-[var(--map-land)]", className)}
       role="img"
       aria-label="Map"
     >
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="h-full w-full">
-        <path d="M-10 690 C 60 668 132 728 122 860 L -10 860 Z" fill="var(--map-water)" />
-        <rect x="188" y="350" width="98" height="96" rx="14" fill="var(--map-park)" />
-        <g stroke="var(--map-road)" strokeWidth="7" strokeLinecap="round" fill="none">
-          {[40, 232, 362].map((x) => (
-            <path key={`v${x}`} d={`M${x} -10 L${x} 860`} />
-          ))}
-          {[84, 160, 222, 400, 478, 720, 800].map((y) => (
-            <path key={`h${y}`} d={`M-10 ${y} L400 ${y}`} />
-          ))}
-        </g>
-        <g fill="none" strokeLinecap="round">
-          <path d="M-10 300 C 120 280 260 330 400 296" stroke="var(--map-major)" strokeWidth="12" />
-          <path d="M150 -10 L172 860" stroke="var(--map-major)" strokeWidth="12" />
+        <g transform={streets}>
+          <path d="M-10 690 C 60 668 132 728 122 860 L -10 860 Z" fill="var(--map-water)" />
+          <rect x="188" y="350" width="98" height="96" rx="14" fill="var(--map-park)" />
+          <g stroke="var(--map-road)" strokeWidth="7" strokeLinecap="round" fill="none">
+            {[40, 232, 362].map((x) => (
+              <path key={`v${x}`} d={`M${x} -10 L${x} 860`} />
+            ))}
+            {[84, 160, 222, 400, 478, 720, 800].map((y) => (
+              <path key={`h${y}`} d={`M-10 ${y} L400 ${y}`} />
+            ))}
+          </g>
+          <g fill="none" strokeLinecap="round">
+            <path
+              d="M-10 300 C 120 280 260 330 400 296"
+              stroke="var(--map-major)"
+              strokeWidth="12"
+            />
+            <path d="M150 -10 L172 860" stroke="var(--map-major)" strokeWidth="12" />
+          </g>
         </g>
 
         {routePath && (

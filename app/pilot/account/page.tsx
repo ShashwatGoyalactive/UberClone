@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 
 import { AccountCard } from "@/components/AccountCard";
 import { AppFrame } from "@/components/AppFrame";
+import { SafetyPinCard } from "@/components/safety/SafetyPinCard";
+import { hasSafetyPin } from "@/lib/services/sos";
 import { requireUser } from "@/lib/auth/session";
 import { TIER_RATES, type RideTier } from "@/lib/fares";
 import { findPilotProfile } from "@/lib/repositories/pilots";
@@ -31,6 +33,7 @@ export default async function PilotAccountPage() {
           <h1 className="font-heading text-[22px] font-bold tracking-tight">Pilot account</h1>
         </div>
         <AccountCard user={user} roleLabel="Pilot" />
+        <SafetyPinCard hasPin={await hasSafetyPin(user.id)} isDemo={user.isDemo} />
         <section className="flex items-center gap-3.5 rounded-lg bg-card p-4">
           <span className="flex flex-1 flex-col gap-0.5">
             <span className="font-bold">

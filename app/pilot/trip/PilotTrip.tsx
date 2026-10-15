@@ -1,16 +1,18 @@
 "use client";
 
-import { Check, Navigation } from "lucide-react";
+import { Check, Navigation, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState, useTransition } from "react";
 
 import { LiveMap } from "@/components/map/LiveMap";
+import { SosFlow } from "@/components/safety/SosFlow";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { formatRupees } from "@/lib/money";
 import { topics } from "@/lib/realtime/topics";
 import { useLive } from "@/lib/realtime/use-live";
 import type { RideView } from "@/lib/services/rides";
+import type { SosView } from "@/lib/services/sos";
 import { FREE_WAIT_S, NO_SHOW_AFTER_S } from "@/lib/trip-fees";
 import { useCurrentPosition } from "@/lib/use-current-position";
 
@@ -29,13 +31,22 @@ import { TripSettlement } from "./TripSettlement";
  * "5 · On trip", then "5c · Collect cash or UPI" (TripSettlement). Buttons are 56px+ because this
  * is used in a moving car (docs/DESIGN_SYSTEM.md §1).
  */
-export function PilotTrip({ initial }: { initial: RideView }) {
+export function PilotTrip({
+  initial,
+  initialSos,
+  isDemoUser,
+}: {
+  initial: RideView;
+  initialSos: SosView | null;
+  isDemoUser: boolean;
+}) {
   const router = useRouter();
   const { position } = useCurrentPosition();
   const [ride, setRide] = useState(initial);
   const [code, setCode] = useState("");
   const codeRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sosOpen, setSosOpen] = useState(initialSos !== null);
   const [pending, startTransition] = useTransition();
   const [now, setNow] = useState(() => Date.now());
   const ended = ["completed", "cancelled", "no_show", "expired"].includes(ride.status);
@@ -143,7 +154,27 @@ export function PilotTrip({ initial }: { initial: RideView }) {
             {ride.status === "in_progress" ? ride.drop.address : ride.pickup.address}
           </span>
         </span>
+        <Button
+          variant="destructive"
+          onClick={() => setSosOpen(true)}
+          className="ml-auto h-12 shrink-0 rounded-full bg-destructive px-4 font-bold text-white"
+        >
+          <ShieldAlert className="size-[18px]" aria-hidden />
+          SOS
+        </Button>
       </div>
+      {sosOpen && (
+        <SosFlow
+          rideId={ride.id}
+          role="pilot"
+          initialAlert={initialSos}
+          subject={`Trip with ${ride.rider?.firstName ?? "rider"} · ${ride.rider?.cometId ?? ""}`}
+          details={`${ride.rider?.firstName ?? "Rider"} · ${ride.rider?.cometId ?? ""} · ${ride.pickup.address}`}
+          isDemo={isDemoUser}
+          getPoint={() => position}
+          onClose={() => setSosOpen(false)}
+        />
+      )}
 
       <section className="absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-6 shadow-sheet">
         <div className="h-[5px] w-10 self-center rounded-full bg-border" aria-hidden />
