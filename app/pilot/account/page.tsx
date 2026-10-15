@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { AccountCard } from "@/components/AccountCard";
 import { AppShell } from "@/components/layout/AppShell";
+import { SafetyLink } from "@/components/safety/SafetyLink";
 import { SafetyPinCard } from "@/components/safety/SafetyPinCard";
 import { hasSafetyPin } from "@/lib/services/sos";
 import { requireUser } from "@/lib/auth/session";
@@ -34,6 +35,11 @@ export default async function PilotAccountPage() {
         </div>
         <AccountCard user={user} roleLabel="Pilot" />
         <SafetyPinCard hasPin={await hasSafetyPin(user.id)} isDemo={user.isDemo} />
+        <SafetyLink
+          href="/pilot/account/women-passengers"
+          title="Women passengers only"
+          sub="Only get requests from women riders"
+        />
         <section className="flex items-center gap-3.5 rounded-lg bg-card p-4">
           <span className="flex flex-1 flex-col gap-0.5">
             <span className="font-bold">

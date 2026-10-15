@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, Clock, Phone, Share2, ShieldAlert, Star } from "lucide-react";
+import { Check, Clock, Phone, Share2, ShieldAlert, ShieldCheck, Star } from "lucide-react";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { LiveMap } from "@/components/map/LiveMap";
 import { DESKTOP_PANEL, SHEET_HANDLE } from "@/components/layout/panel";
@@ -18,9 +18,10 @@ import { useLive } from "@/lib/realtime/use-live";
 import type { RideView } from "@/lib/services/rides";
 import type { SosView } from "@/lib/services/sos";
 import { cn } from "@/lib/utils";
+import { ASK_FALLBACK_AFTER_MS } from "@/lib/women-only";
 import { PAYMENT_METHOD_LABELS } from "@/lib/wallet";
 
-import { createShareLinkAction } from "@/app/safety/actions";
+import { createShareLinkAction, relaxWomenOnlyAction } from "@/app/safety/actions";
 
 import { cancelRideAction, getRideAction } from "../actions";
 import { TripPayment } from "./TripPayment";
@@ -36,16 +37,35 @@ export function RideTracker({
   initial,
   initialSos,
   isDemoUser,
+  womenOnlyFallback,
 }: {
   initial: RideView;
   initialSos: SosView | null;
   isDemoUser: boolean;
+  womenOnlyFallback: "ask" | "wait";
 }) {
   const [ride, setRide] = useState<RideView>(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
   const [sosOpen, setSosOpen] = useState(initialSos !== null);
+  // "Ask me first": after one offer wave with no woman Pilot, ask.
+  const [askReady, setAskReady] = useState(false);
+  const [askDismissed, setAskDismissed] = useState(false);
+  const askable = ride.status === "requested" && ride.womenOnly && womenOnlyFallback === "ask";
+  useEffect(() => {
+    if (!askable) return;
+    const due = new Date(ride.requestedAt).getTime() + ASK_FALLBACK_AFTER_MS - Date.now();
+    const timer = setTimeout(() => setAskReady(true), Math.max(0, due));
+    return () => clearTimeout(timer);
+  }, [askable, ride.requestedAt]);
+
+  function matchAnyPilot() {
+    startTransition(async () => {
+      await relaxWomenOnlyAction({ rideId: ride.id });
+      await refresh();
+    });
+  }
   const [share, setShare] = useState<{ url: string; copied: boolean } | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
 
@@ -163,12 +183,47 @@ export function RideTracker({
                 Finding your Pilot…
               </h1>
               <p className="text-[15px] text-muted-foreground">
-                Asking nearby Pilots. This usually takes under a minute.
+                {ride.womenOnly
+                  ? "Asking nearby verified women Pilots. This can take a little longer."
+                  : "Asking nearby Pilots. This usually takes under a minute."}
               </p>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
               <div className="h-full w-1/2 animate-pulse rounded-full bg-primary" />
             </div>
+            {ride.womenOnly && (
+              <span className="flex w-fit items-center gap-1.5 rounded-full bg-info-soft px-3 py-1 text-xs font-bold text-info">
+                <ShieldCheck className="size-3.5" aria-hidden />
+                Women Pilots only
+              </span>
+            )}
+            {askable && askReady && !askDismissed && (
+              <div
+                role="status"
+                className="flex flex-col gap-3 rounded-lg border border-border p-4"
+              >
+                <span className="font-bold">No woman Pilot has accepted yet</span>
+                <span className="text-sm text-muted-foreground">
+                  Match with any verified Pilot nearby, or keep waiting for a woman Pilot.
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setAskDismissed(true)}
+                    className="h-12 rounded-md font-bold"
+                  >
+                    Keep waiting
+                  </Button>
+                  <Button
+                    onClick={matchAnyPilot}
+                    disabled={pending}
+                    className="h-12 rounded-md font-bold"
+                  >
+                    Match any Pilot
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <>

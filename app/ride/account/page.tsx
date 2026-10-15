@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { AccountCard } from "@/components/AccountCard";
 import { AppShell } from "@/components/layout/AppShell";
 import { RiderTabBar } from "@/components/RiderTabBar";
+import { SafetyLink } from "@/components/safety/SafetyLink";
 import { SafetyPinCard } from "@/components/safety/SafetyPinCard";
 import { hasSafetyPin } from "@/lib/services/sos";
 import { requireUser } from "@/lib/auth/session";
@@ -19,6 +20,11 @@ export default async function AccountPage() {
           <h1 className="font-heading text-2xl font-bold tracking-tight">Account</h1>
           <AccountCard user={user} roleLabel="Rider" />
           <SafetyPinCard hasPin={await hasSafetyPin(user.id)} isDemo={user.isDemo} />
+          <SafetyLink
+            href="/ride/account/women-only"
+            title="Women Pilots only"
+            sub="Ride only with verified women Pilots"
+          />
         </main>
         <RiderTabBar active="/ride/account" />
       </div>

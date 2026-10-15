@@ -28,3 +28,12 @@ export const setPinSchema = z.object({
     .nullable()
     .default(null),
 });
+
+const mode = z.enum(["off", "always", "night"]);
+
+export const womenOnlyPreferenceSchema = z.object({
+  mode,
+  fallback: z.enum(["ask", "wait"]),
+});
+
+export const womenPassengersSchema = z.object({ mode });

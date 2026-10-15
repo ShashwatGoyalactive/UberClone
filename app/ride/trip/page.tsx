@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { requireUser } from "@/lib/auth/session";
 import { getRiderCurrentRide } from "@/lib/services/rides";
 import { getOpenSos } from "@/lib/services/sos";
+import { getWomenOnlySettings } from "@/lib/services/women-only";
 
 import { RideTracker } from "./RideTracker";
 
@@ -20,6 +21,7 @@ export default async function TripPage() {
         initial={ride}
         initialSos={await getOpenSos(user.id, ride.id)}
         isDemoUser={user.isDemo}
+        womenOnlyFallback={(await getWomenOnlySettings(user.id)).fallback}
       />
     </AppShell>
   );

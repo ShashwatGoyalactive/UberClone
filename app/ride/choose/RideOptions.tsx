@@ -1,6 +1,6 @@
 "use client";
 
-import { Banknote, CreditCard, Smartphone, Wallet } from "lucide-react";
+import { Banknote, CreditCard, ShieldCheck, Smartphone, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -32,11 +32,14 @@ export function RideOptions({
   prices,
   balancePaise,
   returnPath,
+  womenOnlyDefault,
 }: {
   quoteId: string;
   prices: Record<RideTier, Paise>;
   balancePaise: Paise;
   returnPath: string;
+  /** null when the rider isn't verified (the switch isn't offered). */
+  womenOnlyDefault: boolean | null;
 }) {
   const router = useRouter();
   const [tier, setTier] = useState<RideTier>("go");
@@ -44,13 +47,14 @@ export function RideOptions({
     balancePaise >= prices.go ? "wallet" : "cash",
   );
   const short = method === "wallet" && balancePaise < prices[tier];
+  const [womenOnly, setWomenOnly] = useState(womenOnlyDefault ?? false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function book() {
     setError(null);
     startTransition(async () => {
-      const result = await bookRideAction({ quoteId, tier, paymentMethod: method });
+      const result = await bookRideAction({ quoteId, tier, paymentMethod: method, womenOnly });
       if (result.ok) {
         router.push("/ride/trip");
         return;
@@ -143,6 +147,29 @@ export function RideOptions({
           <p className="text-[13px] text-muted-foreground">{METHOD_NOTES[method]}</p>
         )}
       </div>
+
+      {womenOnlyDefault !== null && (
+        <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2.5">
+          <ShieldCheck className="size-[18px] shrink-0 text-info" aria-hidden />
+          <span className="flex flex-1 flex-col">
+            <span className="text-sm font-bold">Women Pilots only</span>
+            <span className="text-xs text-muted-foreground">
+              Matched only with verified women Pilots
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={womenOnly}
+            onChange={(e) => setWomenOnly(e.target.checked)}
+            className="peer sr-only"
+          />
+          <span
+            aria-hidden
+            className="relative h-7 w-12 shrink-0 rounded-full bg-border transition-colors peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring after:absolute after:top-1 after:left-1 after:size-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5"
+          />
+        </label>
+      )}
 
       {error && (
         <p role="alert" className="text-sm font-semibold text-danger-text">

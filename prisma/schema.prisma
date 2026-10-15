@@ -60,20 +60,21 @@ model User {
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz
 
-  riderProfile  RiderProfile?
-  pilotProfile  PilotProfile?  @relation("PilotProfileUser")
-  fareQuotes    FareQuote[]
-  pilotLocation PilotLocation?
-  ridesAsRider  Ride[]         @relation("RideRider")
-  ridesAsPilot  Ride[]         @relation("RidePilot")
-  rideOffers    RideOffer[]
-  walletEntries WalletEntry[]
-  payments      Payment[]
-  payouts       Payout[]
-  ratingsGiven  Rating[]       @relation("RatingRater")
-  shareLinks    ShareLink[]
-  sosRaised     SosAlert[]     @relation("SosRaisedBy")
-  ratingsGot    Rating[]       @relation("RatingRatee")
+  riderProfile         RiderProfile?
+  pilotProfile         PilotProfile?         @relation("PilotProfileUser")
+  fareQuotes           FareQuote[]
+  pilotLocation        PilotLocation?
+  ridesAsRider         Ride[]                @relation("RideRider")
+  ridesAsPilot         Ride[]                @relation("RidePilot")
+  rideOffers           RideOffer[]
+  walletEntries        WalletEntry[]
+  payments             Payment[]
+  payouts              Payout[]
+  ratingsGiven         Rating[]              @relation("RatingRater")
+  shareLinks           ShareLink[]
+  sosRaised            SosAlert[]            @relation("SosRaisedBy")
+  identityVerification IdentityVerification?
+  ratingsGot           Rating[]              @relation("RatingRatee")
 
   @@index([isDemo, createdAt], map: "users_demo_created_idx")
   @@map("users")
@@ -569,4 +570,25 @@ model SosAlert {
 
   @@index([raisedBy, createdAt(sort: Desc)], map: "sos_alerts_raiser_idx")
   @@map("sos_alerts")
+}
+
+enum VerificationMethod {
+  simulated
+
+  @@map("verification_method")
+}
+
+/// The women-only verification (docs/DATABASE.md "identity_verifications").
+/// Stores the outcome only, never documents. In Comet it's simulated: a
+/// real service (DigiLocker, an ID check) would set it. Only the
+/// verification service writes it; it's never a profile field.
+model IdentityVerification {
+  userId         String             @id @map("user_id") @db.Uuid
+  verifiedFemale Boolean            @map("verified_female")
+  method         VerificationMethod
+  verifiedAt     DateTime           @default(now()) @map("verified_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("identity_verifications")
 }

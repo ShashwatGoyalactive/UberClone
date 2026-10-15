@@ -91,8 +91,17 @@ export async function findNearestPilots(params: {
   freshSeconds: number;
   limit: number;
   excludePilotIds: string[];
+  /** Only verified women Pilots (a women-only ride). */
+  womenOnly?: boolean;
+  /** The rider is a verified woman; Pilots in women-passengers mode may take her. */
+  riderVerifiedFemale?: boolean;
+  /** Whether "night only" women-passengers modes are on right now. */
+  night?: boolean;
 }): Promise<Candidate[]> {
   const { point, tier, radiusM, freshSeconds, limit, excludePilotIds } = params;
+  const womenOnly = params.womenOnly ?? false;
+  const riderFemale = params.riderVerifiedFemale ?? false;
+  const night = params.night ?? false;
   const exclude = excludePilotIds.length
     ? excludePilotIds
     : ["00000000-0000-0000-0000-000000000000"];
@@ -111,6 +120,11 @@ export async function findNearestPilots(params: {
       AND pl.updated_at > now() - make_interval(secs => ${freshSeconds})
       AND ST_DWithin(pl.location_point, here.g, ${radiusM})
       AND pl.pilot_id <> ALL(${exclude}::uuid[])
+      AND (NOT ${womenOnly} OR EXISTS (
+        SELECT 1 FROM identity_verifications iv
+        WHERE iv.user_id = pl.pilot_id AND iv.verified_female))
+      AND (${riderFemale} OR pp.women_passengers_mode = 'off'
+        OR (pp.women_passengers_mode = 'night' AND NOT ${night}))
     ORDER BY pl.location_point <-> here.g
     LIMIT ${limit}
   `;

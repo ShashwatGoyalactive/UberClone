@@ -96,6 +96,9 @@ export function simPosition(
   }
 }
 
+/** The simulated Pilot's name on a women-only demo ride. */
+export const SIM_WOMAN_PILOT = "Priya Sharma";
+
 /** A plausible vehicle for each tier, so the bot's card matches the ride booked. */
 export const SIM_VEHICLES = {
   bike: {

@@ -6,7 +6,19 @@ import { AppError } from "@/lib/errors";
 import { createShareLink } from "@/lib/services/share";
 import { endSos, raiseSos, setSafetyPin } from "@/lib/services/sos";
 import { rideIdSchema } from "@/lib/validation/rides";
-import { endSosSchema, raiseSosSchema, setPinSchema } from "@/lib/validation/safety";
+import {
+  endSosSchema,
+  raiseSosSchema,
+  setPinSchema,
+  womenOnlyPreferenceSchema,
+  womenPassengersSchema,
+} from "@/lib/validation/safety";
+import {
+  relaxWomenOnly,
+  setWomenOnlyPreference,
+  setWomenPassengersMode,
+  simulateIdentityVerification,
+} from "@/lib/services/women-only";
 
 /** Safety actions shared by the rider and Pilot apps (docs/API.md "Safety"). */
 
@@ -55,5 +67,44 @@ export async function createShareLinkAction(input: unknown) {
     const parsed = rideIdSchema.safeParse(input);
     if (!parsed.success) throw new AppError("NOT_FOUND", "That ride doesn't exist.");
     return createShareLink(userId, parsed.data.rideId);
+  });
+}
+
+/** The simulated women-only verification. No ID is uploaded or stored. */
+export async function simulateVerificationAction() {
+  return runAction("identity.verify", async () => {
+    await simulateIdentityVerification(await requireUserId());
+    return { verified: true };
+  });
+}
+
+export async function setWomenOnlyPreferenceAction(input: unknown) {
+  return runAction("women_only.rider", async () => {
+    const userId = await requireUserId();
+    const parsed = womenOnlyPreferenceSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("VALIDATION", "Choose when this applies.");
+    await setWomenOnlyPreference(userId, parsed.data.mode, parsed.data.fallback);
+    return { saved: true };
+  });
+}
+
+export async function setWomenPassengersModeAction(input: unknown) {
+  return runAction("women_only.pilot", async () => {
+    const userId = await requireUserId();
+    const parsed = womenPassengersSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("VALIDATION", "Choose when this applies.");
+    await setWomenPassengersMode(userId, parsed.data.mode);
+    return { saved: true };
+  });
+}
+
+/** "Match me with any Pilot" while a women-only request is waiting. */
+export async function relaxWomenOnlyAction(input: unknown) {
+  return runAction("women_only.relax", async () => {
+    const userId = await requireUserId();
+    const parsed = rideIdSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("NOT_FOUND", "That ride doesn't exist.");
+    await relaxWomenOnly(userId, parsed.data.rideId);
+    return { relaxed: true };
   });
 }

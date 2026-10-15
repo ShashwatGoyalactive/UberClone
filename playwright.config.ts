@@ -16,6 +16,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
+  // Steps wait on server round trips while two browsers per test and
+  // several tests share one server; 5 s (the default) flakes under that load.
+  expect: { timeout: 10_000 },
   use: {
     baseURL: `http://localhost:${port}`,
     trace: "retain-on-failure",

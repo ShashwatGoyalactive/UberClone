@@ -90,6 +90,8 @@ export type OfferView = {
   tripDurationS: number;
   pickupDistanceM: number | null;
   rider: { name: string; cometId: string; rating: number | null };
+  /** The rider asked for a woman Pilot. Pilots see only this, nothing about her profile. */
+  womenOnly: boolean;
   expiresAt: string;
 };
 
@@ -121,6 +123,7 @@ export async function listOpenOffers(
         ? Number(o.ride.rider.riderProfile.ratingAvg)
         : null,
     },
+    womenOnly: o.ride.womenOnly,
     expiresAt: o.expiresAt.toISOString(),
   }));
 }

@@ -9,6 +9,8 @@ import { requireUser } from "@/lib/auth/session";
 import { AppError } from "@/lib/errors";
 import { quoteFare, type QuoteView } from "@/lib/services/quotes";
 import { getBalance } from "@/lib/services/wallet";
+import { getWomenOnlySettings } from "@/lib/services/women-only";
+import { modeActive } from "@/lib/women-only";
 import { parseTripParams, tripSearchParams } from "@/lib/trip-params";
 
 import { RideOptions } from "./RideOptions";
@@ -30,6 +32,7 @@ export default async function ChoosePage({ searchParams }: PageProps<"/ride/choo
   );
 
   const balancePaise = await getBalance(user.id);
+  const women = await getWomenOnlySettings(user.id);
   let quote: QuoteView | null = null;
   let problem: string | null = null;
   if (!trip) {
@@ -101,6 +104,7 @@ export default async function ChoosePage({ searchParams }: PageProps<"/ride/choo
                 quoteId={quote.quoteId}
                 prices={quote.prices}
                 balancePaise={balancePaise}
+                womenOnlyDefault={women.verified ? modeActive(women.mode, new Date()) : null}
                 returnPath={`/ride/choose?${tripSearchParams(trip.pickup, trip.drop)}`}
               />
             </>

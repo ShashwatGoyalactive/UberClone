@@ -3,6 +3,7 @@ import "server-only";
 import {
   SIM,
   SIM_CASH_CONFIRM_S,
+  SIM_WOMAN_PILOT,
   SIM_TOTAL_S,
   SIM_VEHICLES,
   simPosition,
@@ -25,7 +26,8 @@ import {
 import { findSimulatedPilotFor, wantsSimulatedPilot } from "@/lib/repositories/users";
 import { refreshRequestedRide } from "@/lib/services/matching";
 import { settleRide } from "@/lib/repositories/wallet";
-import { ensureSimulatedPilot } from "@/lib/services/accounts";
+import { DEMO_PERSONAS, ensureSimulatedPilot } from "@/lib/services/accounts";
+import { simulateIdentityVerification } from "@/lib/services/women-only";
 import { chargeOnCompletion } from "@/lib/services/payments";
 import { toRideView, type RideView } from "@/lib/services/rides";
 
@@ -72,6 +74,12 @@ export async function tickDemoRide(
       where: { userId: botId },
       data: { tier: ride.tier, ...vehicle },
     });
+    // On a women-only ride the bot plays a verified woman Pilot.
+    await db.user.update({
+      where: { id: botId },
+      data: { displayName: ride.womenOnly ? SIM_WOMAN_PILOT : DEMO_PERSONAS.pilot.displayName },
+    });
+    if (ride.womenOnly) await simulateIdentityVerification(botId);
     if (await assignRide(ride.id, botId, at(SIM.ACCEPT_AT_S))) {
       await db.ride.update({ where: { id: ride.id }, data: { simulationStartedAt: now } });
       await closeOtherOffers(ride.id, null, "taken");

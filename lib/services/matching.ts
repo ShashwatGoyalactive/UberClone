@@ -7,6 +7,8 @@ import { log } from "@/lib/log";
 import { broadcast } from "@/lib/realtime/broadcast";
 import { EVENTS, topics } from "@/lib/realtime/topics";
 import { findNearestPilots } from "@/lib/repositories/pilot-locations";
+import { db } from "@/lib/db";
+import { isNightInIndia } from "@/lib/women-only";
 import {
   addRideEvent,
   closeOtherOffers,
@@ -33,6 +35,11 @@ export const REQUEST_TIMEOUT_MS = 3 * 60_000;
 /** Pilots whose last position is older than this aren't offered rides. */
 export const LOCATION_FRESH_S = 60;
 
+async function isVerifiedFemale(userId: string): Promise<boolean> {
+  const row = await db.identityVerification.findUnique({ where: { userId } });
+  return row?.verifiedFemale ?? false;
+}
+
 /** Offers the ride to the next wave of Pilots. Returns how many were offered. */
 export async function offerNextWave(ride: Ride, now: Date): Promise<number> {
   const previous = await findOffersForRide(ride.id);
@@ -47,6 +54,9 @@ export async function offerNextWave(ride: Ride, now: Date): Promise<number> {
     // Never re-offer to a Pilot who already saw it, nor to the rider
     // (a demo account can be both).
     excludePilotIds: [...previous.map((o) => o.pilotId), ride.riderId],
+    womenOnly: ride.womenOnly,
+    riderVerifiedFemale: await isVerifiedFemale(ride.riderId),
+    night: isNightInIndia(now),
   });
   if (candidates.length === 0) return 0;
 

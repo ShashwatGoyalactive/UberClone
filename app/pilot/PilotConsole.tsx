@@ -227,8 +227,15 @@ function OfferCard({
       aria-label={`Ride request, ${formatRupees(offer.farePaise)}`}
     >
       <div className="flex items-center gap-2">
-        <span className="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-bold text-brand-text">
-          {TIER_RATES[offer.tier].label}
+        <span className="flex items-center gap-1.5">
+          <span className="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-bold text-brand-text">
+            {TIER_RATES[offer.tier].label}
+          </span>
+          {offer.womenOnly && (
+            <span className="rounded-full bg-info-soft px-2.5 py-1 text-xs font-bold text-info">
+              Women-only
+            </span>
+          )}
         </span>
         <span
           className={cn(

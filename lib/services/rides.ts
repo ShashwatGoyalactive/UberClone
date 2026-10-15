@@ -25,6 +25,7 @@ import { findUser } from "@/lib/repositories/users";
 import { isActive, type RideStatus } from "@/lib/ride-state";
 import { offerNextWave, refreshRequestedRide } from "@/lib/services/matching";
 import { getValidQuote } from "@/lib/services/quotes";
+import { isVerifiedFemale } from "@/lib/services/women-only";
 import { chargeCancellation, walletBalance } from "@/lib/repositories/wallet";
 import { announceBalance } from "@/lib/services/wallet";
 import { CANCEL_REASONS, cancellationFee, type CancelReasonId } from "@/lib/cancellation";
@@ -52,6 +53,7 @@ export type RideView = {
   paymentMethod: PaymentMethod;
   paymentStatus: "pending" | "paid" | "failed" | "refunded" | "waived";
   isDemo: boolean;
+  womenOnly: boolean;
   requestedAt: string;
   arrivedAt: string | null;
   startedAt: string | null;
@@ -91,6 +93,7 @@ export async function toRideView(ride: RideWithPilot, forRider: boolean): Promis
     paymentMethod: ride.paymentMethod,
     paymentStatus: ride.paymentStatus,
     isDemo: ride.isDemo,
+    womenOnly: ride.womenOnly,
     requestedAt: ride.requestedAt.toISOString(),
     arrivedAt: ride.arrivedAt?.toISOString() ?? null,
     startedAt: ride.startedAt?.toISOString() ?? null,
@@ -122,6 +125,8 @@ export type BookInput = {
   quoteId: string;
   tier: RideTier;
   paymentMethod: PaymentMethod;
+  /** Only verified women Pilots. Needs the rider to be verified too. */
+  womenOnly?: boolean;
 };
 
 /** Books a ride from a locked quote and offers it to the first wave. */
@@ -135,6 +140,10 @@ export async function bookRide(riderId: string, input: BookInput, now: Date = ne
   }
   if (await findUnpaidRideForRider(riderId)) {
     throw new AppError("CONFLICT", "Pay for your last ride first.");
+  }
+
+  if (input.womenOnly && !(await isVerifiedFemale(riderId))) {
+    throw new AppError("FORBIDDEN", "Verify your profile to book women-only rides.");
   }
 
   const quote = await getValidQuote(riderId, input.quoteId, now);
@@ -175,6 +184,7 @@ export async function bookRide(riderId: string, input: BookInput, now: Date = ne
         paymentMethod: input.paymentMethod,
         rideCode: String(randomInt(0, 10_000)).padStart(4, "0"),
         isDemo: rider.isDemo,
+        womenOnly: input.womenOnly ?? false,
         requestedAt: now,
       },
       { actorId: riderId, type: "ride.requested" },
