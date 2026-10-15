@@ -10,7 +10,7 @@ export function EnvBadge({ env }: { env: AppEnv }) {
   if (!label) return null;
   return (
     <span
-      className="pointer-events-none fixed top-2 right-2 z-50 rounded-full bg-warn-soft px-2.5 py-1 text-xs font-bold tracking-wide text-warn uppercase shadow-float"
+      className="pointer-events-none fixed top-2 right-2 z-50 md:top-auto md:bottom-3 rounded-full bg-warn-soft px-2.5 py-1 text-xs font-bold tracking-wide text-warn uppercase shadow-float"
       aria-label={`${label} environment`}
     >
       {label}

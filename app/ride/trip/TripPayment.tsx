@@ -76,7 +76,7 @@ export function TripPayment({ ride, onChange }: { ride: RideView; onChange: () =
   ];
 
   return (
-    <main className="flex min-h-dvh flex-col">
+    <main className="flex min-h-app flex-col md:mx-auto md:max-w-[520px]">
       <div className="flex flex-col items-center gap-1.5 px-5 pt-8 pb-5 text-center">
         <span className="text-sm text-muted-foreground">
           You&apos;ve arrived · {ride.drop.address}

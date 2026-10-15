@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useState, useTransition } from "react";
 
+import { DESKTOP_PANEL, SHEET_HANDLE } from "@/components/layout/panel";
 import { LiveMap } from "@/components/map/LiveMap";
 import { Button } from "@/components/ui/button";
 import { TIER_RATES } from "@/lib/fares";
@@ -106,24 +107,24 @@ export function PilotConsole({
   const visible = offers.filter((o) => new Date(o.expiresAt).getTime() > now);
 
   return (
-    <div className="relative h-dvh overflow-hidden">
+    <div className="relative h-app overflow-hidden">
       <div className="absolute inset-0">
         <LiveMap center={position} you={position} bottomInset={0.4} />
       </div>
       {visible.length > 0 && <div className="absolute inset-0 bg-ink/40" aria-hidden />}
 
-      <div className="absolute inset-x-5 top-6 flex items-center gap-2.5">
+      <div className="absolute inset-x-5 top-6 flex items-center gap-2.5 md:inset-x-auto md:right-6 md:w-[320px]">
         <Link
           href="/pilot/account"
           aria-label="Pilot account"
-          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-card font-heading text-base font-bold shadow-float"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-card font-heading text-base font-bold shadow-float md:hidden"
         >
           {initials}
         </Link>
         <Link
           href="/pilot/earnings"
           aria-label="Earnings"
-          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-card shadow-float"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-card shadow-float md:hidden"
         >
           <IndianRupee className="size-5" aria-hidden strokeWidth={2.4} />
         </Link>
@@ -150,7 +151,10 @@ export function PilotConsole({
       </div>
 
       {visible.length > 0 ? (
-        <div className="absolute inset-x-3 bottom-3 flex flex-col gap-2.5" aria-live="assertive">
+        <div
+          className="absolute inset-x-3 bottom-3 flex flex-col gap-2.5 md:inset-x-auto md:bottom-auto md:left-6 md:top-6 md:max-h-[calc(100%-3rem)] md:w-[400px] md:overflow-y-auto"
+          aria-live="assertive"
+        >
           {visible.length > 1 && (
             <p className="px-2 font-heading text-lg font-bold text-white">
               {visible.length} ride requests
@@ -172,8 +176,13 @@ export function PilotConsole({
           ))}
         </div>
       ) : (
-        <section className="absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-8 shadow-sheet">
-          <div className="h-[5px] w-10 self-center rounded-full bg-border" aria-hidden />
+        <section
+          className={`absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-8 shadow-sheet md:pt-6 md:pb-6 ${DESKTOP_PANEL}`}
+        >
+          <div
+            className={`h-[5px] w-10 self-center rounded-full bg-border ${SHEET_HANDLE}`}
+            aria-hidden
+          />
           <h1 className="font-heading text-[22px] font-bold tracking-tight">
             {online ? "Finding trips near you" : "You're offline"}
           </h1>

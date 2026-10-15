@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { AppFrame } from "@/components/AppFrame";
+import { AppShell } from "@/components/layout/AppShell";
 import { requireUser } from "@/lib/auth/session";
 import { getPilotCurrentRide } from "@/lib/services/pilots";
 import { getOpenSos } from "@/lib/services/sos";
@@ -15,12 +15,12 @@ export default async function PilotTripPage() {
   const ride = await getPilotCurrentRide(user.id);
   if (!ride) redirect("/pilot");
   return (
-    <AppFrame>
+    <AppShell app="pilot" active="/pilot" layout="map" initial={user.displayName[0]}>
       <PilotTrip
         initial={ride}
         initialSos={await getOpenSos(user.id, ride.id)}
         isDemoUser={user.isDemo}
       />
-    </AppFrame>
+    </AppShell>
   );
 }

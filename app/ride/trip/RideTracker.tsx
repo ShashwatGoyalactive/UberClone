@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { LiveMap } from "@/components/map/LiveMap";
+import { DESKTOP_PANEL, SHEET_HANDLE } from "@/components/layout/panel";
 import { RatingForm } from "@/components/RatingForm";
 import { SosFlow } from "@/components/safety/SosFlow";
 import { Button } from "@/components/ui/button";
@@ -121,7 +122,7 @@ export function RideTracker({
   const minutes = Math.max(1, Math.round(ride.durationS / 60));
 
   return (
-    <div className="relative h-dvh overflow-hidden">
+    <div className="relative h-app overflow-hidden">
       <div className="absolute inset-0">
         <LiveMap
           center={ride.pickup.point}
@@ -147,10 +148,13 @@ export function RideTracker({
       )}
 
       <section
-        className="absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-6 shadow-sheet"
+        className={`absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-6 shadow-sheet md:pt-6 ${DESKTOP_PANEL}`}
         aria-live="polite"
       >
-        <div className="h-[5px] w-10 self-center rounded-full bg-border" aria-hidden />
+        <div
+          className={`h-[5px] w-10 self-center rounded-full bg-border ${SHEET_HANDLE}`}
+          aria-hidden
+        />
 
         {waiting ? (
           <>
@@ -356,14 +360,17 @@ function CancelSheet({
   const pilotFirst = ride.pilot?.name.split(" ")[0] ?? "Your Pilot";
 
   return (
-    <div className="absolute inset-0 z-20 flex items-end bg-ink/40">
+    <div className="absolute inset-0 z-20 flex items-end bg-ink/40 md:items-center md:justify-center">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="cancel-title"
-        className="flex w-full flex-col gap-3.5 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-6 shadow-sheet"
+        className="flex w-full flex-col gap-3.5 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-6 shadow-sheet md:max-w-[440px] md:rounded-3xl md:pt-6"
       >
-        <div className="h-[5px] w-10 self-center rounded-full bg-border" aria-hidden />
+        <div
+          className={`h-[5px] w-10 self-center rounded-full bg-border ${SHEET_HANDLE}`}
+          aria-hidden
+        />
         <h2 id="cancel-title" className="font-heading text-[22px] font-bold tracking-tight">
           Cancel this ride?
         </h2>
@@ -446,7 +453,7 @@ function CancelSheet({
 function TripDone({ ride }: { ride: RideView }) {
   const [rated, setRated] = useState<number | null>(null);
   return (
-    <main className="flex min-h-dvh flex-col gap-5 px-5 pt-8 pb-6">
+    <main className="flex min-h-app flex-col gap-5 px-5 pt-8 pb-6 md:mx-auto md:max-w-[520px]">
       <div className="flex flex-col items-center gap-2.5 text-center">
         <div className="flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
           <Check className="size-8" aria-hidden strokeWidth={2.6} />
@@ -521,7 +528,7 @@ function Ended({ ride }: { ride: RideView }) {
         ? `A ${formatRupees(fee)} fee was paid from your Comet Wallet to your Pilot.`
         : `The ${formatRupees(fee)} fee was waived this time.`;
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-8 text-center">
+    <main className="flex min-h-app flex-col items-center justify-center gap-4 px-8 text-center md:mx-auto md:max-w-[520px]">
       <h1 className="font-heading text-2xl font-bold">
         {noPilots
           ? "No Pilots nearby right now"

@@ -26,6 +26,7 @@ export function FallbackMap({
   car,
   route,
   bottomInset = 0,
+  leftInset = 0,
   className,
 }: MapViewProps) {
   // Markers are fitted to the box the map is actually drawn in, so a short
@@ -64,11 +65,18 @@ export function FallbackMap({
   // Room for the floating controls at the top and the markers' size.
   const padY = Math.min(160, visibleH * 0.35);
   const shiftY = Math.min(40, visibleH * 0.08);
-  const scale = Math.min((W - 80) / (maxLng - minLng), (visibleH - padY) / (maxLat - minLat));
+  const visibleW = Math.max(120, W - leftInset);
+  const scale = Math.min(
+    (visibleW - 80) / (maxLng - minLng),
+    (visibleH - padY) / (maxLat - minLat),
+  );
   const cx = (minLng + maxLng) / 2;
   const cy = (minLat + maxLat) / 2;
   const project = ([lng, lat]: [number, number]) =>
-    [W / 2 + (lng - cx) * scale, visibleH / 2 + shiftY - (lat - cy) * scale] as const;
+    [
+      leftInset + visibleW / 2 + (lng - cx) * scale,
+      visibleH / 2 + shiftY - (lat - cy) * scale,
+    ] as const;
   // Scale the street drawing to cover the box, centred.
   const cover = Math.max(W / BASE_W, H / BASE_H);
   const streets = `translate(${(W - BASE_W * cover) / 2} ${(H - BASE_H * cover) / 2}) scale(${cover})`;
@@ -91,26 +99,60 @@ export function FallbackMap({
       aria-label="Map"
     >
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="h-full w-full">
-        <g transform={streets}>
-          <path d="M-10 690 C 60 668 132 728 122 860 L -10 860 Z" fill="var(--map-water)" />
-          <rect x="188" y="350" width="98" height="96" rx="14" fill="var(--map-park)" />
-          <g stroke="var(--map-road)" strokeWidth="7" strokeLinecap="round" fill="none">
-            {[40, 232, 362].map((x) => (
-              <path key={`v${x}`} d={`M${x} -10 L${x} 860`} />
-            ))}
-            {[84, 160, 222, 400, 478, 720, 800].map((y) => (
-              <path key={`h${y}`} d={`M-10 ${y} L400 ${y}`} />
-            ))}
+        {W <= 600 ? (
+          <g transform={streets}>
+            <path d="M-10 690 C 60 668 132 728 122 860 L -10 860 Z" fill="var(--map-water)" />
+            <rect x="188" y="350" width="98" height="96" rx="14" fill="var(--map-park)" />
+            <g stroke="var(--map-road)" strokeWidth="7" strokeLinecap="round" fill="none">
+              {[40, 232, 362].map((x) => (
+                <path key={`v${x}`} d={`M${x} -10 L${x} 860`} />
+              ))}
+              {[84, 160, 222, 400, 478, 720, 800].map((y) => (
+                <path key={`h${y}`} d={`M-10 ${y} L400 ${y}`} />
+              ))}
+            </g>
+            <g fill="none" strokeLinecap="round">
+              <path
+                d="M-10 300 C 120 280 260 330 400 296"
+                stroke="var(--map-major)"
+                strokeWidth="12"
+              />
+              <path d="M150 -10 L172 860" stroke="var(--map-major)" strokeWidth="12" />
+            </g>
           </g>
-          <g fill="none" strokeLinecap="round">
+        ) : (
+          // Wide maps (desktop): streets at the same spacing as on a phone,
+          // laid out across the real width instead of the phone drawing
+          // stretched to fit.
+          <g aria-hidden>
             <path
-              d="M-10 300 C 120 280 260 330 400 296"
-              stroke="var(--map-major)"
-              strokeWidth="12"
+              d={`M${W * 0.8} ${H + 10} C ${W * 0.84} ${H * 0.82} ${W * 0.92} ${H * 0.76} ${W + 10} ${H * 0.79} L ${W + 10} ${H + 10} Z`}
+              fill="var(--map-water)"
             />
-            <path d="M150 -10 L172 860" stroke="var(--map-major)" strokeWidth="12" />
+            <rect
+              x={W * 0.52}
+              y={H * 0.44}
+              width={170}
+              height={130}
+              rx="18"
+              fill="var(--map-park)"
+            />
+            <g stroke="var(--map-road)" strokeWidth="7" strokeLinecap="round" fill="none">
+              {Array.from({ length: Math.ceil(W / 210) + 1 }, (_, i) => i * 210 + 60).map((x) => (
+                <path key={`v${x}`} d={`M${x} -10 L${x + 8} ${H + 10}`} />
+              ))}
+              {Array.from({ length: Math.ceil(H / 150) + 1 }, (_, i) => i * 150 + 70).map((y) => (
+                <path key={`h${y}`} d={`M-10 ${y} L${W + 10} ${y - 6}`} />
+              ))}
+            </g>
+            <g fill="none" stroke="var(--map-major)" strokeWidth="12" strokeLinecap="round">
+              <path
+                d={`M-10 ${H * 0.48} C ${W * 0.25} ${H * 0.43} ${W * 0.5} ${H * 0.54} ${W + 10} ${H * 0.46}`}
+              />
+              <path d={`M${W * 0.58} -10 L${W * 0.6} ${H + 10}`} />
+            </g>
           </g>
-        </g>
+        )}
 
         {routePath && (
           <g fill="none" strokeLinecap="round" strokeLinejoin="round">

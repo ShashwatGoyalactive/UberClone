@@ -2,7 +2,8 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { AppFrame } from "@/components/AppFrame";
+import { AppShell } from "@/components/layout/AppShell";
+import { DESKTOP_PANEL, SHEET_HANDLE } from "@/components/layout/panel";
 import { LiveMap } from "@/components/map/LiveMap";
 import { requireUser } from "@/lib/auth/session";
 import { AppError } from "@/lib/errors";
@@ -43,8 +44,8 @@ export default async function ChoosePage({ searchParams }: PageProps<"/ride/choo
   }
 
   return (
-    <AppFrame>
-      <div className="relative h-dvh overflow-hidden">
+    <AppShell app="rider" active="/ride" layout="map" initial={user.displayName[0]}>
+      <div className="relative h-app overflow-hidden">
         <div className="absolute inset-0">
           {trip && (
             <LiveMap
@@ -60,17 +61,31 @@ export default async function ChoosePage({ searchParams }: PageProps<"/ride/choo
         <Link
           href="/ride/plan"
           aria-label="Back"
-          className="absolute top-6 left-5 flex size-12 items-center justify-center rounded-full bg-card shadow-float"
+          className="absolute top-6 left-5 flex size-12 items-center justify-center rounded-full bg-card shadow-float md:hidden"
         >
           <ArrowLeft className="size-[22px]" aria-hidden strokeWidth={2.2} />
         </Link>
 
-        <section className="absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-6 shadow-sheet">
-          <div className="h-[5px] w-10 self-center rounded-full bg-border" aria-hidden />
+        <section
+          className={`absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-6 shadow-sheet md:pt-5 ${DESKTOP_PANEL}`}
+        >
+          <div
+            className={`h-[5px] w-10 self-center rounded-full bg-border ${SHEET_HANDLE}`}
+            aria-hidden
+          />
           {quote && trip ? (
             <>
-              <div className="flex items-baseline justify-between gap-3">
-                <h1 className="font-heading text-[22px] font-bold tracking-tight">Choose a ride</h1>
+              <div className="flex items-center justify-between gap-3">
+                <Link
+                  href="/ride/plan"
+                  aria-label="Back"
+                  className="hidden size-10 shrink-0 items-center justify-center rounded-full bg-muted md:flex"
+                >
+                  <ArrowLeft className="size-5" aria-hidden strokeWidth={2.2} />
+                </Link>
+                <h1 className="flex-1 font-heading text-[22px] font-bold tracking-tight">
+                  Choose a ride
+                </h1>
                 <span className="text-sm text-muted-foreground">{formatTrip(quote)}</span>
               </div>
               <p className="truncate text-sm text-muted-foreground">
@@ -105,6 +120,6 @@ export default async function ChoosePage({ searchParams }: PageProps<"/ride/choo
           )}
         </section>
       </div>
-    </AppFrame>
+    </AppShell>
   );
 }

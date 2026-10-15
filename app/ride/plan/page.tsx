@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { AppFrame } from "@/components/AppFrame";
+import { AppShell } from "@/components/layout/AppShell";
 import { requireUser } from "@/lib/auth/session";
 
 import { PlanForm } from "./PlanForm";
@@ -8,10 +8,10 @@ import { PlanForm } from "./PlanForm";
 export const metadata: Metadata = { title: "Plan your ride" };
 
 export default async function PlanPage() {
-  await requireUser("/ride/plan");
+  const user = await requireUser("/ride/plan");
   return (
-    <AppFrame>
+    <AppShell app="rider" active="/ride" layout="page" initial={user.displayName[0]}>
       <PlanForm />
-    </AppFrame>
+    </AppShell>
   );
 }

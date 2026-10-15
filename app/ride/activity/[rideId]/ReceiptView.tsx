@@ -37,7 +37,7 @@ export function ReceiptView({
   const tripRef = `CMT-R-${ride.id.slice(0, 6).toUpperCase()}`;
 
   return (
-    <main className="flex min-h-dvh flex-col">
+    <main className="flex min-h-dvh flex-col md:mx-auto md:min-h-0 md:max-w-[640px] md:overflow-hidden md:rounded-3xl md:shadow-float">
       <div className="relative h-[200px] shrink-0 overflow-hidden print:hidden">
         <LiveMap
           center={ride.pickup.point}

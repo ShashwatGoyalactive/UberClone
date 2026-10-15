@@ -58,117 +58,122 @@ export function EarningsScreen({ initial, cometId }: { initial: EarningsView; co
   }
 
   return (
-    <main className="flex min-h-dvh flex-col">
-      <div className="flex items-center gap-3 px-5 pt-6">
-        <Link
-          href="/pilot"
-          aria-label="Back"
-          className="flex size-11 items-center justify-center rounded-full bg-card"
-        >
-          <ArrowLeft className="size-[22px]" aria-hidden strokeWidth={2.2} />
-        </Link>
-        <h1 className="flex-1 font-heading text-[22px] font-bold tracking-tight">Earnings</h1>
-        <span className="rounded-full bg-card px-3 py-1.5 text-sm font-semibold">Last 7 days</span>
-      </div>
+    <main className="flex min-h-dvh flex-col md:grid md:min-h-0 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)] md:items-start md:gap-6">
+      <div className="flex flex-col">
+        <div className="flex items-center gap-3 px-5 pt-6 md:px-0 md:pt-0">
+          <Link
+            href="/pilot"
+            aria-label="Back"
+            className="flex size-11 items-center justify-center rounded-full bg-card"
+          >
+            <ArrowLeft className="size-[22px]" aria-hidden strokeWidth={2.2} />
+          </Link>
+          <h1 className="flex-1 font-heading text-[22px] font-bold tracking-tight">Earnings</h1>
+          <span className="rounded-full bg-card px-3 py-1.5 text-sm font-semibold">
+            Last 7 days
+          </span>
+        </div>
 
-      <section className="mx-5 mt-4 flex flex-col gap-4 rounded-xl bg-card p-5">
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[13px] text-muted-foreground">
-              {dayFull.format(asDate(day.date))}
-              {day.trips === 0
-                ? " · no trips"
-                : ` · ${day.trips} ${day.trips === 1 ? "trip" : "trips"}`}
-            </span>
-            <span
-              className="font-heading text-[34px] leading-tight font-bold tracking-tight"
-              data-testid="day-earnings"
-            >
-              {formatRupees(day.earnedPaise)}
+        <section className="mx-5 mt-4 flex flex-col gap-4 rounded-xl bg-card p-5 md:mx-0">
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[13px] text-muted-foreground">
+                {dayFull.format(asDate(day.date))}
+                {day.trips === 0
+                  ? " · no trips"
+                  : ` · ${day.trips} ${day.trips === 1 ? "trip" : "trips"}`}
+              </span>
+              <span
+                className="font-heading text-[34px] leading-tight font-bold tracking-tight"
+                data-testid="day-earnings"
+              >
+                {formatRupees(day.earnedPaise)}
+              </span>
+            </div>
+            <span className="text-[13px] text-muted-foreground" data-testid="week-earnings">
+              Week {formatRupees(data.weekPaise)}
             </span>
           </div>
-          <span className="text-[13px] text-muted-foreground" data-testid="week-earnings">
-            Week {formatRupees(data.weekPaise)}
-          </span>
-        </div>
-        <div
-          className="grid h-[150px] grid-cols-7 items-end gap-2.5"
-          role="group"
-          aria-label="Earnings by day"
-        >
-          {data.days.map((d, i) => (
-            <button
-              key={d.date}
-              type="button"
-              onClick={() => setSelected(i)}
-              aria-pressed={i === selected}
-              aria-label={`${dayFull.format(asDate(d.date))}: ${formatRupees(d.earnedPaise)}`}
-              className="flex h-full flex-col items-center justify-end gap-1.5"
-            >
-              <span
-                className={cn("w-full rounded-sm", i === selected ? "bg-primary" : "bg-border")}
-                style={{ height: `${Math.max(6, Math.round((d.earnedPaise / max) * 124))}px` }}
-              />
-              <span
-                className={cn(
-                  "text-xs font-semibold",
-                  i === selected ? "text-foreground" : "text-muted-foreground",
-                )}
+          <div
+            className="grid h-[150px] grid-cols-7 items-end gap-2.5"
+            role="group"
+            aria-label="Earnings by day"
+          >
+            {data.days.map((d, i) => (
+              <button
+                key={d.date}
+                type="button"
+                onClick={() => setSelected(i)}
+                aria-pressed={i === selected}
+                aria-label={`${dayFull.format(asDate(d.date))}: ${formatRupees(d.earnedPaise)}`}
+                className="flex h-full flex-col items-center justify-end gap-1.5"
               >
-                {dayName.format(asDate(d.date))}
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
+                <span
+                  className={cn("w-full rounded-sm", i === selected ? "bg-primary" : "bg-border")}
+                  style={{ height: `${Math.max(6, Math.round((d.earnedPaise / max) * 124))}px` }}
+                />
+                <span
+                  className={cn(
+                    "text-xs font-semibold",
+                    i === selected ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {dayName.format(asDate(d.date))}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
 
-      <div className="mx-5 mt-3 grid grid-cols-2 gap-2">
-        <div className="flex flex-col gap-0.5 rounded-lg bg-card px-3 py-3">
-          <span className="font-heading text-[17px] font-bold">{data.weekTrips}</span>
-          <span className="text-xs text-muted-foreground">Trips this week</span>
+        <div className="mx-5 mt-3 grid grid-cols-2 gap-2 md:mx-0">
+          <div className="flex flex-col gap-0.5 rounded-lg bg-card px-3 py-3">
+            <span className="font-heading text-[17px] font-bold">{data.weekTrips}</span>
+            <span className="text-xs text-muted-foreground">Trips this week</span>
+          </div>
+          <div className="flex flex-col gap-0.5 rounded-lg bg-card px-3 py-3">
+            <span className="font-heading text-[17px] font-bold">
+              {data.rating ? data.rating.toFixed(2) : "New"}
+            </span>
+            <span className="text-xs text-muted-foreground">Rating</span>
+          </div>
         </div>
-        <div className="flex flex-col gap-0.5 rounded-lg bg-card px-3 py-3">
-          <span className="font-heading text-[17px] font-bold">
-            {data.rating ? data.rating.toFixed(2) : "New"}
-          </span>
-          <span className="text-xs text-muted-foreground">Rating</span>
-        </div>
+
+        <section className="mx-5 mt-3 flex items-center gap-3.5 rounded-xl bg-ink p-[18px] text-on-ink md:mx-0">
+          <div className="flex flex-1 flex-col gap-0.5">
+            <span className="text-[13px] text-ink-muted">Pilot wallet</span>
+            <span className="font-heading text-2xl font-bold" data-testid="pilot-balance">
+              {formatRupees(balance)}
+            </span>
+            <span className="text-xs text-ink-muted">Comet ID · {cometId}</span>
+          </div>
+          <Button
+            onClick={withdraw}
+            disabled={pending || balance <= 0}
+            className="h-12 rounded-lg px-[18px] text-[15px] font-bold"
+          >
+            {pending ? "Sending…" : "Withdraw"}
+          </Button>
+        </section>
+        {balance < 0 && (
+          <p className="mx-5 mt-2 text-[13px] text-muted-foreground">
+            You owe Comet its fee on cash trips. It&apos;s settled from your next online payments.
+          </p>
+        )}
+        {message && (
+          <p
+            role={message.kind === "error" ? "alert" : "status"}
+            className={cn(
+              "mx-5 mt-3 rounded-md px-4 py-3 text-sm font-semibold",
+              message.kind === "error"
+                ? "bg-danger-soft text-danger-text"
+                : "bg-info-soft text-info",
+            )}
+          >
+            {message.text}
+          </p>
+        )}
       </div>
-
-      <section className="mx-5 mt-3 flex items-center gap-3.5 rounded-xl bg-ink p-[18px] text-on-ink">
-        <div className="flex flex-1 flex-col gap-0.5">
-          <span className="text-[13px] text-ink-muted">Pilot wallet</span>
-          <span className="font-heading text-2xl font-bold" data-testid="pilot-balance">
-            {formatRupees(balance)}
-          </span>
-          <span className="text-xs text-ink-muted">Comet ID · {cometId}</span>
-        </div>
-        <Button
-          onClick={withdraw}
-          disabled={pending || balance <= 0}
-          className="h-12 rounded-lg px-[18px] text-[15px] font-bold"
-        >
-          {pending ? "Sending…" : "Withdraw"}
-        </Button>
-      </section>
-      {balance < 0 && (
-        <p className="mx-5 mt-2 text-[13px] text-muted-foreground">
-          You owe Comet its fee on cash trips. It&apos;s settled from your next online payments.
-        </p>
-      )}
-      {message && (
-        <p
-          role={message.kind === "error" ? "alert" : "status"}
-          className={cn(
-            "mx-5 mt-3 rounded-md px-4 py-3 text-sm font-semibold",
-            message.kind === "error" ? "bg-danger-soft text-danger-text" : "bg-info-soft text-info",
-          )}
-        >
-          {message.text}
-        </p>
-      )}
-
-      <section className="mt-4 flex flex-1 flex-col rounded-t-[var(--radius-sheet)] bg-card px-5 pt-4 pb-6">
+      <section className="mt-4 flex flex-1 flex-col rounded-t-[var(--radius-sheet)] bg-card px-5 pt-4 pb-6 md:mt-0 md:rounded-3xl">
         <h2 className="mb-1 font-heading text-[17px] font-bold">Recent trips</h2>
         {data.recentTrips.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">

@@ -72,99 +72,109 @@ export function WalletScreen({
   }
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <div className="flex items-center gap-3 px-5 pt-6">
-        <Link
-          href={returnTo ?? "/ride"}
-          aria-label="Back"
-          className="flex size-11 items-center justify-center rounded-full bg-card"
-        >
-          <ArrowLeft className="size-[22px]" aria-hidden strokeWidth={2.2} />
-        </Link>
-        <h1 className="font-heading text-[22px] font-bold tracking-tight">Comet Wallet</h1>
-      </div>
-
-      <section className="relative mx-5 mt-4 flex flex-col gap-4 overflow-hidden rounded-xl bg-ink p-5 text-on-ink">
-        <CometMark className="pointer-events-none absolute -top-10 -right-10 size-44 opacity-20" />
-        <div className="relative flex flex-col gap-1">
-          <span className="text-sm text-ink-muted">Available balance</span>
-          <span
-            className="font-heading text-[40px] leading-tight font-bold tracking-tight"
-            data-testid="wallet-balance"
+    <div className="flex min-h-dvh flex-col md:grid md:min-h-0 md:grid-cols-[minmax(0,440px)_minmax(0,1fr)] md:items-start md:gap-6">
+      <div className="flex flex-col md:sticky md:top-8">
+        <div className="flex items-center gap-3 px-5 pt-6 md:px-0 md:pt-0">
+          <Link
+            href={returnTo ?? "/ride"}
+            aria-label="Back"
+            className="flex size-11 items-center justify-center rounded-full bg-card"
           >
-            {formatRupeesExact(wallet.balancePaise)}
-          </span>
+            <ArrowLeft className="size-[22px]" aria-hidden strokeWidth={2.2} />
+          </Link>
+          <h1 className="font-heading text-[22px] font-bold tracking-tight">Comet Wallet</h1>
         </div>
 
-        <div role="radiogroup" aria-label="Amount to add" className="relative flex flex-wrap gap-2">
-          {QUICK_TOPUPS.map((value) => {
-            const on = typed === null && amount === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() => {
-                  setAmount(value);
-                  setOther("");
-                }}
-                className={cn(
-                  "h-9 rounded-full px-3.5 text-sm font-semibold",
-                  on ? "bg-primary text-primary-foreground" : "bg-ink-raised hover:bg-ink-hover",
-                )}
-              >
-                + {formatRupees(value)}
-              </button>
-            );
-          })}
-          <label className="flex h-9 items-center gap-1 rounded-full bg-ink-raised pr-3 pl-3.5 text-sm font-semibold focus-within:ring-2 focus-within:ring-primary">
-            <span aria-hidden>₹</span>
-            <span className="sr-only">Other amount in rupees</span>
-            <input
-              inputMode="numeric"
-              placeholder="Other"
-              value={other}
-              onChange={(e) => setOther(e.target.value.replace(/[^\d]/g, "").slice(0, 5))}
-              className="w-16 bg-transparent outline-none placeholder:text-ink-muted"
-            />
-          </label>
-        </div>
+        <section className="relative mx-5 mt-4 flex flex-col gap-4 overflow-hidden rounded-xl bg-ink p-5 text-on-ink md:mx-0">
+          <CometMark className="pointer-events-none absolute -top-10 -right-10 size-44 opacity-20" />
+          <div className="relative flex flex-col gap-1">
+            <span className="text-sm text-ink-muted">Available balance</span>
+            <span
+              className="font-heading text-[40px] leading-tight font-bold tracking-tight"
+              data-testid="wallet-balance"
+            >
+              {formatRupeesExact(wallet.balancePaise)}
+            </span>
+          </div>
 
-        {typed !== null && !valid && (
-          <p className="relative text-sm font-semibold text-ink-accent">
-            Add between {formatRupees(TOPUP_MIN)} and {formatRupees(TOPUP_MAX)}.
+          <div
+            role="radiogroup"
+            aria-label="Amount to add"
+            className="relative flex flex-wrap gap-2"
+          >
+            {QUICK_TOPUPS.map((value) => {
+              const on = typed === null && amount === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => {
+                    setAmount(value);
+                    setOther("");
+                  }}
+                  className={cn(
+                    "h-9 rounded-full px-3.5 text-sm font-semibold",
+                    on ? "bg-primary text-primary-foreground" : "bg-ink-raised hover:bg-ink-hover",
+                  )}
+                >
+                  + {formatRupees(value)}
+                </button>
+              );
+            })}
+            <label className="flex h-9 items-center gap-1 rounded-full bg-ink-raised pr-3 pl-3.5 text-sm font-semibold focus-within:ring-2 focus-within:ring-primary">
+              <span aria-hidden>₹</span>
+              <span className="sr-only">Other amount in rupees</span>
+              <input
+                inputMode="numeric"
+                placeholder="Other"
+                value={other}
+                onChange={(e) => setOther(e.target.value.replace(/[^\d]/g, "").slice(0, 5))}
+                className="w-16 bg-transparent outline-none placeholder:text-ink-muted"
+              />
+            </label>
+          </div>
+
+          {typed !== null && !valid && (
+            <p className="relative text-sm font-semibold text-ink-accent">
+              Add between {formatRupees(TOPUP_MIN)} and {formatRupees(TOPUP_MAX)}.
+            </p>
+          )}
+
+          <Button
+            onClick={addMoney}
+            disabled={pending || !valid}
+            className="relative h-[52px] rounded-lg text-base font-bold"
+          >
+            <Plus className="size-[18px]" aria-hidden strokeWidth={2.4} />
+            {pending ? "Opening checkout…" : `Add ${valid ? formatRupees(chosen) : "money"}`}
+          </Button>
+        </section>
+
+        {message && (
+          <p
+            role={message.kind === "error" ? "alert" : "status"}
+            className={cn(
+              "mx-5 mt-3 rounded-md px-4 py-3 text-sm font-semibold md:mx-0",
+              message.kind === "error"
+                ? "bg-danger-soft text-danger-text"
+                : "bg-info-soft text-info",
+            )}
+          >
+            {message.text}
           </p>
         )}
-
-        <Button
-          onClick={addMoney}
-          disabled={pending || !valid}
-          className="relative h-[52px] rounded-lg text-base font-bold"
-        >
-          <Plus className="size-[18px]" aria-hidden strokeWidth={2.4} />
-          {pending ? "Opening checkout…" : `Add ${valid ? formatRupees(chosen) : "money"}`}
-        </Button>
-      </section>
-
-      {message && (
-        <p
-          role={message.kind === "error" ? "alert" : "status"}
-          className={cn(
-            "mx-5 mt-3 rounded-md px-4 py-3 text-sm font-semibold",
-            message.kind === "error" ? "bg-danger-soft text-danger-text" : "bg-info-soft text-info",
-          )}
-        >
-          {message.text}
-        </p>
-      )}
-      {returnTo && message?.kind === "ok" && (
-        <Link href={returnTo} className="mx-5 mt-2 text-sm font-semibold text-info hover:underline">
-          Back to your ride
-        </Link>
-      )}
-
-      <section className="mt-4 flex flex-1 flex-col gap-1 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-5">
+        {returnTo && message?.kind === "ok" && (
+          <Link
+            href={returnTo}
+            className="mx-5 mt-2 text-sm font-semibold text-info hover:underline md:mx-0"
+          >
+            Back to your ride
+          </Link>
+        )}
+      </div>
+      <section className="mt-4 flex flex-1 flex-col gap-1 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-5 md:mt-0 md:rounded-3xl md:pb-3">
         <h2 className="mb-1 font-heading text-lg font-bold">Transactions</h2>
         {wallet.entries.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">No transactions yet.</p>
@@ -193,7 +203,7 @@ export function WalletScreen({
           </ul>
         )}
       </section>
-      <div className="bg-card">
+      <div className="bg-card md:hidden">
         <RiderTabBar active="/ride/wallet" />
       </div>
       {checkoutElement}

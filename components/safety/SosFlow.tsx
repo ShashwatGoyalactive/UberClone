@@ -157,7 +157,7 @@ export function SosFlow({
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="sos-title"
-        className="fixed inset-0 z-50 flex flex-col gap-5 overflow-y-auto bg-[#FBF3F2] px-5 py-6 text-[#0E1220] dark:bg-[#140B0E] dark:text-[#F2F4FA]"
+        className="fixed inset-0 z-50 flex flex-col gap-5 overflow-y-auto bg-[#FBF3F2] px-5 py-6 md:px-[max(1.25rem,calc(50%-16rem))] text-[#0E1220] dark:bg-[#140B0E] dark:text-[#F2F4FA]"
       >
         <div className="flex items-center justify-between gap-3">
           <span className="flex items-center gap-2 text-[15px] font-bold text-danger-text">
@@ -313,7 +313,7 @@ export function SosFlow({
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="sos-active-title"
-      className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-[#FBF3F2] text-[#0E1220] dark:bg-[#140B0E] dark:text-[#F2F4FA]"
+      className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-[#FBF3F2] md:[&>*]:px-[max(1.25rem,calc(50%-16rem))] text-[#0E1220] dark:bg-[#140B0E] dark:text-[#F2F4FA]"
     >
       <div className="flex flex-col gap-1.5 bg-destructive px-5 pt-6 pb-5 text-white">
         <span className="flex items-center gap-2 text-[13px] font-bold tracking-wider">

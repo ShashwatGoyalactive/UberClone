@@ -17,6 +17,11 @@ export type MapViewProps = {
    * is fitted into the visible part rather than behind the sheet.
    */
   bottomInset?: number;
+  /**
+   * Pixels hidden under a panel on the left (the desktop layout). Set by
+   * LiveMap, not by screens.
+   */
+  leftInset?: number;
   className?: string;
 };
 

@@ -2,7 +2,8 @@ import { Gift, Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { AppFrame } from "@/components/AppFrame";
+import { AppShell } from "@/components/layout/AppShell";
+import { DESKTOP_PANEL, SHEET_HANDLE } from "@/components/layout/panel";
 import { VehicleIcon } from "@/components/icons/Vehicle";
 import { RiderTabBar } from "@/components/RiderTabBar";
 import { requireUser } from "@/lib/auth/session";
@@ -36,13 +37,13 @@ export default async function RideHomePage() {
   const toRate = activeRide ? null : await getRatingPrompt(user.id);
 
   return (
-    <AppFrame>
-      <div className="relative h-dvh overflow-hidden">
+    <AppShell app="rider" active="/ride" layout="map" initial={firstName?.[0]}>
+      <div className="relative h-app overflow-hidden">
         <div className="absolute inset-0">
           <HomeMap />
         </div>
 
-        <div className="pointer-events-none absolute inset-x-5 top-6 flex items-center justify-between">
+        <div className="pointer-events-none absolute inset-x-5 top-6 flex items-center justify-between md:hidden">
           <Link
             href="/ride/account"
             aria-label="Account"
@@ -52,9 +53,14 @@ export default async function RideHomePage() {
           </Link>
         </div>
 
-        <section className="absolute inset-x-0 bottom-0 flex flex-col rounded-t-[var(--radius-sheet)] bg-card shadow-sheet">
+        <section
+          className={`absolute inset-x-0 bottom-0 flex flex-col rounded-t-[var(--radius-sheet)] bg-card shadow-sheet md:pb-5 ${DESKTOP_PANEL}`}
+        >
           <div className="flex flex-col gap-4 px-5 pt-3">
-            <div className="h-[5px] w-10 self-center rounded-full bg-border" aria-hidden />
+            <div
+              className={`h-[5px] w-10 self-center rounded-full bg-border ${SHEET_HANDLE}`}
+              aria-hidden
+            />
             <h1 className="font-heading text-2xl font-bold tracking-tight">
               {greeting()}, {firstName}
             </h1>
@@ -116,6 +122,6 @@ export default async function RideHomePage() {
           <RiderTabBar active="/ride" />
         </section>
       </div>
-    </AppFrame>
+    </AppShell>
   );
 }

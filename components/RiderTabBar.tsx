@@ -14,7 +14,10 @@ const TABS = [
 
 export function RiderTabBar({ active }: { active: (typeof TABS)[number]["href"] }) {
   return (
-    <nav aria-label="Main" className="grid grid-cols-4 border-t border-border px-2 pt-2 pb-4">
+    <nav
+      aria-label="Main"
+      className="grid grid-cols-4 border-t border-border px-2 pt-2 pb-4 md:hidden"
+    >
       {TABS.map(({ href, label, Icon }) => {
         const on = href === active;
         return (

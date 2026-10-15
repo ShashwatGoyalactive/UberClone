@@ -194,3 +194,21 @@
     }
   }
 }
+
+/*
+ * App heights (docs/DESIGN_SYSTEM.md §14). On phones a screen is the whole
+ * viewport; from 768px the desktop navigation bar (4rem) sits on top, so
+ * map screens fill what's left beneath it.
+ */
+@utility h-app {
+  height: 100dvh;
+  @media (width >= 48rem) {
+    height: calc(100dvh - 4rem);
+  }
+}
+@utility min-h-app {
+  min-height: 100dvh;
+  @media (width >= 48rem) {
+    min-height: calc(100dvh - 4rem);
+  }
+}

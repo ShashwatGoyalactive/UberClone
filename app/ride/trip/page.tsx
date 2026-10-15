@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { AppFrame } from "@/components/AppFrame";
+import { AppShell } from "@/components/layout/AppShell";
 import { requireUser } from "@/lib/auth/session";
 import { getRiderCurrentRide } from "@/lib/services/rides";
 import { getOpenSos } from "@/lib/services/sos";
@@ -15,12 +15,12 @@ export default async function TripPage() {
   const ride = await getRiderCurrentRide(user.id);
   if (!ride) redirect("/ride");
   return (
-    <AppFrame>
+    <AppShell app="rider" active="/ride" layout="map" initial={user.displayName[0]}>
       <RideTracker
         initial={ride}
         initialSos={await getOpenSos(user.id, ride.id)}
         isDemoUser={user.isDemo}
       />
-    </AppFrame>
+    </AppShell>
   );
 }

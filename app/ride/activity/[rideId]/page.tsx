@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { AppFrame } from "@/components/AppFrame";
+import { AppShell } from "@/components/layout/AppShell";
 import { requireUser } from "@/lib/auth/session";
 import { AppError } from "@/lib/errors";
 import { getReceipt } from "@/lib/services/history";
@@ -25,8 +25,8 @@ export default async function ReceiptPage({ params }: PageProps<"/ride/activity/
   if (!receipt) notFound();
   const again = `/ride/choose?${tripSearchParams(receipt.ride.pickup, receipt.ride.drop)}`;
   return (
-    <AppFrame>
+    <AppShell app="rider" active="/ride/activity" layout="page" initial={user.displayName[0]}>
       <ReceiptView receipt={receipt} bookAgainHref={again} />
-    </AppFrame>
+    </AppShell>
   );
 }

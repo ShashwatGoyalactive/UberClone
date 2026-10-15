@@ -4,6 +4,7 @@ import { Check, Navigation, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState, useTransition } from "react";
 
+import { DESKTOP_PANEL, SHEET_HANDLE } from "@/components/layout/panel";
 import { LiveMap } from "@/components/map/LiveMap";
 import { SosFlow } from "@/components/safety/SosFlow";
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,7 @@ export function PilotTrip({
 
   if (ended) {
     return (
-      <main className="flex min-h-dvh flex-col gap-5 px-5 pt-8 pb-6">
+      <main className="flex min-h-app flex-col gap-5 px-5 pt-8 pb-6 md:mx-auto md:max-w-[520px]">
         <div className="flex flex-col items-center gap-2.5 text-center">
           <div className="flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Check className="size-8" aria-hidden strokeWidth={2.6} />
@@ -130,7 +131,7 @@ export function PilotTrip({
   }
 
   return (
-    <div className="relative h-dvh overflow-hidden">
+    <div className="relative h-app overflow-hidden">
       <div className="absolute inset-0">
         <LiveMap
           center={ride.pickup.point}
@@ -142,7 +143,7 @@ export function PilotTrip({
         />
       </div>
 
-      <div className="absolute inset-x-3 top-4 flex items-center gap-3.5 rounded-xl bg-ink p-4 text-on-ink shadow-float">
+      <div className="absolute inset-x-3 top-4 flex items-center gap-3.5 rounded-xl bg-ink p-4 text-on-ink shadow-float md:inset-x-auto md:top-6 md:right-6 md:w-[440px]">
         <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Navigation className="size-6" aria-hidden strokeWidth={2.4} />
         </span>
@@ -176,8 +177,13 @@ export function PilotTrip({
         />
       )}
 
-      <section className="absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-6 shadow-sheet">
-        <div className="h-[5px] w-10 self-center rounded-full bg-border" aria-hidden />
+      <section
+        className={`absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-t-[var(--radius-sheet)] bg-card px-5 pt-3 pb-6 shadow-sheet md:pt-6 ${DESKTOP_PANEL}`}
+      >
+        <div
+          className={`h-[5px] w-10 self-center rounded-full bg-border ${SHEET_HANDLE}`}
+          aria-hidden
+        />
 
         {ride.status === "accepted" && (
           <>

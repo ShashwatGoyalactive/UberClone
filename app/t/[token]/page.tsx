@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { AppFrame } from "@/components/AppFrame";
 import { getSharedTrip } from "@/lib/services/share";
 
 import { SharedTripView } from "./SharedTripView";
@@ -16,8 +15,8 @@ export const metadata: Metadata = {
 export default async function SharedTripPage({ params }: PageProps<"/t/[token]">) {
   const { token } = await params;
   return (
-    <AppFrame>
+    <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-background sm:shadow-float md:max-w-none md:shadow-none">
       <SharedTripView token={token} initial={await getSharedTrip(token)} />
-    </AppFrame>
+    </div>
   );
 }

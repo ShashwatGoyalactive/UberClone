@@ -39,7 +39,17 @@ function markerEl(kind: "you" | "pickup" | "drop" | "car") {
 }
 
 export default function MapboxMap(props: MapViewProps) {
-  const { center, you, pickup, drop, car, route, bottomInset = 0, className } = props;
+  const {
+    center,
+    you,
+    pickup,
+    drop,
+    car,
+    route,
+    bottomInset = 0,
+    leftInset = 0,
+    className,
+  } = props;
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
@@ -91,6 +101,7 @@ export default function MapboxMap(props: MapViewProps) {
     route?.[0],
     route?.at(-1),
     bottomInset,
+    leftInset,
   ]);
 
   // Route, markers and framing whenever the trip changes.
@@ -139,7 +150,12 @@ export default function MapboxMap(props: MapViewProps) {
     }
 
     const height = m.getContainer().clientHeight;
-    const padding = { top: 90, left: 48, right: 48, bottom: Math.round(height * bottomInset) + 40 };
+    const padding = {
+      top: 90,
+      left: 48 + leftInset,
+      right: 48,
+      bottom: Math.round(height * bottomInset) + 40,
+    };
     if (route && route.length > 1) {
       const bounds = route.reduce(
         (b, c) => b.extend(c),

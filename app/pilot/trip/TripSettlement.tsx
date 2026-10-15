@@ -57,7 +57,7 @@ export function TripSettlement({
 
   if (paid) {
     return (
-      <main className="flex min-h-dvh flex-col gap-5 px-5 pt-8 pb-6">
+      <main className="flex min-h-app flex-col gap-5 px-5 pt-8 pb-6 md:mx-auto md:max-w-[520px]">
         <div className="flex flex-col items-center gap-2.5 text-center">
           <div className="flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Check className="size-8" aria-hidden strokeWidth={2.6} />
@@ -105,7 +105,7 @@ export function TripSettlement({
 
   if (!collecting) {
     return (
-      <main className="flex min-h-dvh flex-col gap-5 px-5 pt-8 pb-6">
+      <main className="flex min-h-app flex-col gap-5 px-5 pt-8 pb-6 md:mx-auto md:max-w-[520px]">
         <div className="flex flex-col gap-2">
           <h1 className="font-heading text-[26px] font-bold tracking-tight">Trip ended</h1>
           <p className="text-muted-foreground">{ride.drop.address}</p>
@@ -159,7 +159,7 @@ function CollectCash({ ride, onChange }: { ride: RideView; onChange: () => Promi
   }
 
   return (
-    <main className="flex min-h-dvh flex-col">
+    <main className="flex min-h-app flex-col md:mx-auto md:max-w-[520px]">
       <div className="flex flex-col gap-2 px-5 pt-7 pb-4">
         <span className="font-bold">Trip ended · collect from the rider</span>
         <div className="flex items-baseline justify-between gap-3">

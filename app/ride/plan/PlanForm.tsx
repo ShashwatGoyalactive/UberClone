@@ -62,7 +62,7 @@ export function PlanForm() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-card">
+    <div className="flex min-h-dvh flex-col bg-card md:mx-auto md:min-h-0 md:max-w-[640px] md:overflow-hidden md:rounded-3xl md:shadow-float">
       <div className="flex flex-col gap-4 border-b border-border px-5 pt-6 pb-4">
         <div className="flex items-center gap-3">
           <Link

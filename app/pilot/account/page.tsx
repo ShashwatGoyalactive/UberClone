@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AccountCard } from "@/components/AccountCard";
-import { AppFrame } from "@/components/AppFrame";
+import { AppShell } from "@/components/layout/AppShell";
 import { SafetyPinCard } from "@/components/safety/SafetyPinCard";
 import { hasSafetyPin } from "@/lib/services/sos";
 import { requireUser } from "@/lib/auth/session";
@@ -20,8 +20,8 @@ export default async function PilotAccountPage() {
   if (!pilot) redirect("/pilot");
 
   return (
-    <AppFrame>
-      <main className="flex min-h-dvh flex-col gap-5 px-5 pt-6 pb-8">
+    <AppShell app="pilot" active="/pilot/account" layout="page" initial={user.displayName[0]}>
+      <main className="flex min-h-dvh flex-col gap-5 px-5 pt-6 pb-8 md:mx-auto md:min-h-0 md:max-w-[640px] md:px-0 md:pt-0">
         <div className="flex items-center gap-3">
           <Link
             href="/pilot"
@@ -49,6 +49,6 @@ export default async function PilotAccountPage() {
           </span>
         </section>
       </main>
-    </AppFrame>
+    </AppShell>
   );
 }
